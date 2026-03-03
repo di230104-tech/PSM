@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../ui/Sidebar';
 import Header from '../ui/Header';
+import CommandPalette from '../ui/CommandPalette';
 import { useSelector } from 'react-redux';
 
 const MainLayout = () => {
@@ -19,6 +20,7 @@ const MainLayout = () => {
     return (
 
       <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+      <CommandPalette />
       <Sidebar 
         user={user} 
         isCollapsed={isSidebarCollapsed} 
