@@ -52,7 +52,7 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
               )}
             />
             {errors.supplier_id && (
-              <p className="text-xs text-red-500 font-medium">{errors.supplier_id.message}</p>
+              <p className="text-sm text-red-500 font-medium">{errors.supplier_id.message}</p>
             )}
         </div>
 
@@ -69,7 +69,7 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
                   className={`${inputClass} pl-9`} // Add padding for "RM"
               />
             </div>
-            {errors.purchase_price && <p className="text-xs text-red-500">{errors.purchase_price.message}</p>}
+            {errors.purchase_price && <p className="text-sm text-red-500">{errors.purchase_price.message}</p>}
         </div>
 
         {/* Purchase Date */}
@@ -80,7 +80,7 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
                 {...control.register("purchase_date")} 
                 className={inputClass}
             />
-            {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
+            {errors.purchase_date && <p className="text-sm text-red-500">{errors.purchase_date.message}</p>}
         </div>
 
         {/* Warranty (Simplified to Months) */}
@@ -92,7 +92,7 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
                 {...control.register("warranty_months")} 
                 className={inputClass}
             />
-             <p className="text-xs text-muted-foreground">Enter 0 if no warranty.</p>
+             {errors.warranty_months ? <p className="text-sm text-red-500">{errors.warranty_months.message}</p> : <p className="text-xs text-muted-foreground">Enter 0 if no warranty.</p>}
         </div>
 
         {/* Lifespan (Years) */}
@@ -114,7 +114,7 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
               )}
             />
             {errors.lifespan_years && (
-              <p className="text-xs text-red-500 font-medium">{errors.lifespan_years.message}</p>
+              <p className="text-sm text-red-500 font-medium">{errors.lifespan_years.message}</p>
             )}
         </div>
 
@@ -135,7 +135,7 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
               )}
             />
             {errors.status && (
-              <p className="text-xs text-red-500 font-medium">{errors.status.message}</p>
+              <p className="text-sm text-red-500 font-medium">{errors.status.message}</p>
             )}
           </div>
         )}

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import Papa from 'papaparse';
 import { supabase } from '../../../lib/supabaseClient';
 import { useSelector } from 'react-redux';
 import { logActivity } from '../../../utils/activityLogger';
@@ -14,8 +15,20 @@ const BulkImport = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
+  const [suppliers, setSuppliers] = useState([]);
   const { user: authUser } = useSelector((state) => state.auth);
   const userId = authUser?.id;
+
+  // Fetch suppliers for mapping names to IDs
+  React.useEffect(() => {
+    const fetchSuppliers = async () => {
+      const { data, error } = await supabase.from('suppliers').select('id, company_name');
+      if (!error && data) {
+        setSuppliers(data);
+      }
+    };
+    fetchSuppliers();
+  }, []);
 
   const onDrop = useCallback(async (acceptedFiles) => {
     setFiles(acceptedFiles);
@@ -24,26 +37,54 @@ const BulkImport = () => {
     setImportResults(null);
 
     const file = acceptedFiles[0];
-    const reader = new FileReader();
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        // Map CSV headers to Supabase schema in the complete callback
+        const mapped = results.data.map(item => {
+          // Resolve Supplier ID
+          const supplierName = item.Supplier?.trim();
+          const foundSupplier = suppliers.find(s => 
+            s.company_name.toLowerCase() === supplierName?.toLowerCase()
+          );
+          
+          // Calculate Warranty Months
+          const purchaseDate = new Date(item['Purchase Date']);
+          const expiryDate = new Date(item['Warranty Expiry']);
+          let warrantyMonths = 0;
+          if (!isNaN(purchaseDate.getTime()) && !isNaN(expiryDate.getTime())) {
+            const yearsDiff = expiryDate.getFullYear() - purchaseDate.getFullYear();
+            const monthsDiff = expiryDate.getMonth() - purchaseDate.getMonth();
+            warrantyMonths = Math.max(0, (yearsDiff * 12) + monthsDiff);
+          }
 
-    reader.onload = (event) => {
-      const csvData = event.target.result;
-      // Basic CSV parsing
-      const rows = csvData.split('\n').map(row => row.split(','));
-      const headers = rows[0].map(h => h.trim());
-      const data = rows.slice(1).map(row => {
-        let obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = row[i]?.trim();
+          const catPrefix = (item.Category || 'GEN').substring(0, 3).toUpperCase();
+          const randomId = Math.floor(1000 + Math.random() * 9000);
+
+          return {
+            product_name: item['Model Name'],
+            category: item.Category,
+            serial_number: item['Serial Number'],
+            purchase_date: item['Purchase Date'] || null,
+            purchase_price: parseFloat(item['Purchase Price']) || 0,
+            warranty_months: warrantyMonths,
+            supplier_id: foundSupplier ? foundSupplier.id : null,
+            status: 'in_storage',
+            asset_tag: `ISD-${catPrefix}-${randomId}`,
+            lifespan_years: 3,
+          };
         });
-        return obj;
-      });
-      setParsedData(data);
-      setIsParsing(false);
-    };
-
-    reader.readAsText(file);
-  }, []);
+        setParsedData(mapped);
+        setIsParsing(false);
+      },
+      error: (error) => {
+        console.error('Error parsing CSV:', error);
+        setIsParsing(false);
+      }
+    });
+  }, [suppliers]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -52,48 +93,36 @@ const BulkImport = () => {
   });
   
   const handleImport = async () => {
+    if (parsedData.length === 0) return;
+    
     setIsImporting(true);
     setImportResults({ success: 0, failed: 0, errors: [] });
 
-    for (const item of parsedData) {
-      // TODO: Validate each item with Zod before inserting
-
-      const asset_tag = `ISD-${item.category?.substring(0,3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-      const { data, error } = await supabase
-        .from('assets')
-        .insert({
-          product_name: item.product_name,
-          category: item.category,
-          serial_number: item.serial_number,
-          model: item.model,
-          purchase_date: item.purchase_date,
-          purchase_price: parseFloat(item.purchase_price) || 0,
-          warranty_months: parseInt(item.warranty_months) || 0,
-          supplier_id: parseInt(item.supplier_id),
-          lifespan_years: parseInt(item.lifespan_years) || 0,
-          current_department_id: parseInt(item.current_department_id),
-          status: 'in_storage',
-          asset_tag,
-        })
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('assets')
+      .insert(parsedData)
+      .select();
       
-      if (error) {
-        setImportResults(prev => ({
-          ...prev,
-          failed: prev.failed + 1,
-          errors: [...prev.errors, `Row ${parsedData.indexOf(item) + 2}: ${error.message}`]
-        }));
-      } else {
+    if (error) {
+      setImportResults({
+        success: 0,
+        failed: parsedData.length,
+        errors: [error.message]
+      });
+    } else {
+      setImportResults({
+        success: data.length,
+        failed: parsedData.length - data.length,
+        errors: [] // Simplified for bulk insert; for per-row errors, would need to loop
+      });
+      for (const asset of data) {
         await logActivity(
           'asset_added',
-          `Added new asset via bulk import: ${item.product_name} (${asset_tag})`,
-          data.id,
+          `Added new asset via bulk import: ${asset.product_name} (${asset.asset_tag})`,
+          asset.id,
           userId,
           { source: 'bulk_import' }
         );
-        setImportResults(prev => ({ ...prev, success: prev.success + 1 }));
       }
     }
     setIsImporting(false);
@@ -134,7 +163,7 @@ const BulkImport = () => {
             <table className="w-full text-sm">
               <thead className="bg-muted sticky top-0">
                 <tr>
-                  {Object.keys(parsedData[0]).map(key => (
+                  {parsedData.length > 0 && Object.keys(parsedData[0]).map(key => (
                     <th key={key} className="p-2 text-left">{key}</th>
                   ))}
                 </tr>
@@ -153,7 +182,7 @@ const BulkImport = () => {
           
           <div className="mt-6 flex justify-end">
             <Button onClick={handleImport} loading={isImporting}>
-              Import {parsedData.length} Assets
+              Confirm Import
             </Button>
           </div>
         </div>

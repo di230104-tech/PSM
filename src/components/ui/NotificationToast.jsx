@@ -33,20 +33,21 @@ const NotificationToast = ({
   };
 
   const getToastStyles = () => {
-    const baseStyles = "flex items-start space-x-3 p-4 rounded-lg shadow-modal border max-w-md w-full";
+    const baseStyles = "flex items-start space-x-3 p-4 rounded-xl shadow-xl border border-gray-200 w-full";
     
     switch (type) {
       case 'success':
-        return `${baseStyles} bg-success/10 border-success/20 text-success-foreground`;
+        return `${baseStyles} bg-white text-success-foreground`;
       case 'warning':
-        return `${baseStyles} bg-warning/10 border-warning/20 text-warning-foreground`;
+        return `${baseStyles} bg-white text-warning-foreground`;
       case 'error':
-        return `${baseStyles} bg-error/10 border-error/20 text-error-foreground`;
+        return `${baseStyles} bg-white text-error-foreground`;
       case 'info':
       default:
-        return `${baseStyles} bg-accent/10 border-accent/20 text-accent-foreground`;
+        return `${baseStyles} bg-white text-accent-foreground`;
     }
   };
+
 
   const getIcon = () => {
     switch (type) {
@@ -108,7 +109,7 @@ const NotificationToast = ({
 
 const NotificationContainer = ({ notifications = [], onRemove }) => {
   return (
-    <div className="fixed top-20 right-4 z-400 space-y-3 pointer-events-none">
+    <div className="fixed top-20 right-4 z-50 space-y-3 pointer-events-none">
       <div className="space-y-3 pointer-events-auto">
         {notifications?.map((notification) => (
           <NotificationToast

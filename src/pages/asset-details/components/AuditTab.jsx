@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import SafeHTMLViewer from '../../../components/ui/SafeHTMLViewer';
 
 const AuditTab = ({ auditTrail }) => {
   const [filter, setFilter] = useState('all');
@@ -163,9 +164,7 @@ const AuditTab = ({ auditTrail }) => {
                     )}
                   </div>
                   
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {entry?.description}
-                  </p>
+                  <SafeHTMLViewer htmlContent={entry?.description} />
                   
                   {/* Changes Details */}
                   {entry?.changes && entry?.changes?.length > 0 && (

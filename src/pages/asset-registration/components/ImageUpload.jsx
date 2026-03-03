@@ -57,7 +57,11 @@ const ImageUpload = ({ onUpload, initialImageUrl = null, bucketName = 'Asset_ima
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: 'image/jpeg, image/png, image/gif',
+    accept: {
+      'image/jpeg': ['.jpeg', '.jpg'],
+      'image/png': ['.png'],
+      'image/gif': ['.gif']
+    },
     multiple: false,
   });
 

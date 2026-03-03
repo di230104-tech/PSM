@@ -94,24 +94,23 @@ const AssetDetailPanel = ({ asset, onClose, onEdit, onAssetUpdate }) => {
   );
 
   return (
-    <AnimatePresence>
-      <>
-        <motion.div
-          key="backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 z-[100]"
-          onClick={onClose}
-        />
-        <motion.div
-          key="panel"
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed top-0 right-0 h-full w-full max-w-md bg-card border-l border-border z-[100] flex flex-col"
-        >
+    <>
+      <motion.div
+        key="backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 z-[100]"
+        onClick={onClose}
+      />
+      <motion.div
+        key="panel"
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="fixed top-0 right-0 h-full w-full max-w-md bg-card border-l border-border z-[100] flex flex-col"
+      >
           {/* Header */}
           <header className="p-6 border-b border-border">
             <div className="flex items-center space-x-4">
@@ -190,7 +189,6 @@ const AssetDetailPanel = ({ asset, onClose, onEdit, onAssetUpdate }) => {
           </footer>
         </motion.div>
       </>
-    </AnimatePresence>
   );
 };
 

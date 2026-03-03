@@ -30,16 +30,13 @@ const BulkImportTemplate = () => {
               The CSV file must have the following columns in this specific order:
             </p>
             <ul className="list-disc list-inside mt-2 text-sm text-muted-foreground">
-              <li>product_name</li>
-              <li>category</li>
-              <li>serial_number</li>
-              <li>model</li>
-              <li>purchase_date (YYYY-MM-DD)</li>
-              <li>purchase_price (e.g., 1200.50)</li>
-              <li>warranty_months (e.g., 12)</li>
-              <li>supplier_id (must be a valid ID from the suppliers table)</li>
-              <li>lifespan_years (e.g., 5)</li>
-              <li>current_department_id (must be a valid ID from the departments table)</li>
+              <li>Category (e.g., Laptop, Desktop, Printer)</li>
+              <li>Model Name (e.g., Dell Latitude 7420)</li>
+              <li>Serial Number (e.g., SN-123456)</li>
+              <li>Purchase Price (e.g., 4500.00)</li>
+              <li>Purchase Date (YYYY-MM-DD)</li>
+              <li>Warranty Expiry (YYYY-MM-DD)</li>
+              <li>Supplier (The company name of the supplier)</li>
             </ul>
           </div>
         </div>

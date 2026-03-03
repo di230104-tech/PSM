@@ -15,17 +15,27 @@ import BulkImport from './components/BulkImport'; // Import BulkImport
 
 // --- 1. Zod Validation Schema ---
 const assetRegistrationSchema = z.object({
-  product_name: z.string().min(3, "Asset Name is required"),
+  product_name: z.string().min(3, { message: 'Asset name must be at least 3 characters long' }),
   category: z.string().min(1, "Category is required"),
-  serial_number: z.string().min(3, "Serial Number is required"),
+  serial_number: z.string().regex(/^[a-zA-Z0-9]+$/, { message: 'Serial number must be alphanumeric' }),
   model: z.string().optional(),
-  purchase_date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
-  purchase_price: z.preprocess((a) => parseFloat(String(a)) || 0, z.number().min(0)),
-  warranty_months: z.preprocess((a) => parseInt(String(a)) || 0, z.number().int().min(0)),
+  purchase_date: z.coerce.date(),
+  purchase_price: z.coerce.number().positive({ message: 'Price must be a positive number' }),
+  warranty_months: z.coerce.number().int().min(0, { message: 'Warranty must be a positive number' }),
   supplier_id: z.string().min(1, "Supplier is required"),
   image_url: z.string().url().optional().nullable(),
   lifespan_years: z.preprocess((a) => parseInt(String(a)) || 0, z.number().int().min(0)),
   status: z.string().optional(),
+}).refine(data => {
+    if (data.purchase_date && data.warranty_months > 0) {
+        const expiryDate = new Date(data.purchase_date);
+        expiryDate.setMonth(expiryDate.getMonth() + data.warranty_months);
+        return expiryDate > new Date();
+    }
+    return true;
+}, {
+    message: "Warranty expiry date must be in the future",
+    path: ["warranty_months"],
 });
 
 // Draft schema
@@ -69,7 +79,6 @@ const AssetRegistration = () => {
     }
   });
 
-  console.log('Form Errors:', errors);
   const { user: authUser } = useSelector((state) => state.auth); // Get user from Redux store
   const userId = authUser?.id;
 

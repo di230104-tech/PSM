@@ -21,6 +21,7 @@ import EmployeeManagement from 'pages/admin/EmployeeManagement';
 import DepartmentManagement from 'pages/admin/DepartmentManagement';
 import AllActivities from 'pages/AllActivities'; // Import AllActivities
 import BulkImportTemplate from 'pages/BulkImportTemplate'; // Import BulkImportTemplate
+import MfaSetup from 'pages/MfaSetup';
 
 const Routes = () => {
   return (
@@ -52,6 +53,7 @@ const Routes = () => {
             <Route path="/asset-registration" element={<AssetRegistration />} />
             <Route path="/bulk-import-template" element={<BulkImportTemplate />} /> {/* New route for BulkImportTemplate */}
             <Route path="/all-activities" element={<AllActivities />} /> {/* New route for AllActivities */}
+            <Route path="/mfa-setup" element={<MfaSetup />} />
 
             {/* Admin Routes */}
             <Route 

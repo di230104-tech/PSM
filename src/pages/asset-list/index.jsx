@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import QRCode from 'react-qr-code';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
@@ -12,6 +13,7 @@ import { useSelector } from 'react-redux'; // Import useSelector
 import { logActivity } from '../../utils/activityLogger'; // Import logActivity
 import FilterToolbar from './components/FilterToolbar'; // Import FilterToolbar
 import AssetTable from './components/AssetTable'; // Import AssetTable
+import MfaChallengeModal from '../../components/ui/MfaChallengeModal'; // Import MfaChallengeModal
 
 // --- QR Code Modal Component ---
 const QRCodeModal = ({ asset, onClose }) => {
@@ -20,7 +22,7 @@ const QRCodeModal = ({ asset, onClose }) => {
     const handlePrint = () => window.print();
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center print:bg-white">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center print:bg-white overflow-hidden">
             <style>{`
                 @media print {
                     body > *:not(.printable-area) { display: none !important; }
@@ -28,7 +30,24 @@ const QRCodeModal = ({ asset, onClose }) => {
                     .no-print { display: none !important; }
                 }
             `}</style>
-            <div className="bg-card rounded-lg shadow-xl max-w-sm w-full relative printable-area">
+            
+            {/* Backdrop */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60"
+                onClick={onClose}
+            />
+
+            {/* Modal Content */}
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="bg-card rounded-lg shadow-xl max-w-sm w-full relative printable-area z-10"
+            >
                 <div id="qr-code-content" className="p-8 text-center">
                     <h3 className="text-lg font-bold text-foreground mb-2">{asset.product_name}</h3>
                     <div className="bg-white p-4 rounded-md inline-block">
@@ -43,7 +62,7 @@ const QRCodeModal = ({ asset, onClose }) => {
                     <Button variant="outline" onClick={onClose}>Close</Button>
                     <Button onClick={handlePrint} iconName="Printer">Print</Button>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };
@@ -54,6 +73,9 @@ const AssetList = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [assets, setAssets] = useState([]);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [assetToDelete, setAssetToDelete] = useState(null);
+    const [showMfaModal, setShowMfaModal] = useState(false);
+    const [enrolledFactors, setEnrolledFactors] = useState([]);
     const [qrAsset, setQrAsset] = useState(null);
     const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
     const [notifications, setNotifications] = useState([]);
@@ -110,7 +132,17 @@ const AssetList = () => {
                 addNotification(`Error fetching filter options: ${error.message}`, 'error');
             }
         };
+        const fetchMfaFactors = async () => {
+            const { data, error } = await supabase.auth.mfa.listFactors();
+            if (data) {
+                setEnrolledFactors(data.totp);
+            }
+            if(error){
+                addNotification(`Error fetching mfa factors: ${error.message}`, 'error');
+            }
+        }
         fetchFilterOptions();
+        fetchMfaFactors();
     }, []);
 
     useEffect(() => {
@@ -176,30 +208,42 @@ const AssetList = () => {
         fetchAssets();
     }, [sortConfig, location.state, filters]);
     
-    const handleDeleteAsset = async (asset) => {
-        if (window.confirm(`Are you sure you want to delete ${asset.product_name} (${asset.asset_tag})? This action cannot be undone.`)) {
-            try {
-                // Log activity before deletion
-                await logActivity(
-                  'asset_deleted',
-                  `Deleted asset: ${asset.product_name} (${asset.asset_tag})`,
-                  asset.id,
-                  userId,
-                  { deleted_asset_name: asset.product_name, deleted_asset_tag: asset.asset_tag }
-                );
-
-                const { error } = await supabase.from('assets').delete().eq('id', asset.id);
-                if (error) throw error;
-                setAssets(currentAssets => currentAssets.filter(a => a.id !== asset.id));
-                addNotification('Asset deleted successfully.', 'success');
-                
-                if (selectedAsset && selectedAsset.id === asset.id) {
-                    setSelectedAsset(null);
-                }
-            } catch (error) {
-                addNotification(`Error deleting asset: ${error.message}`, 'error');
+    const handleDeleteAsset = (asset) => {
+        if (enrolledFactors.length > 0) {
+            setAssetToDelete(asset);
+            setShowMfaModal(true);
+        } else {
+            // Fallback to window.confirm if no MFA is set up
+            if (window.confirm(`Are you sure you want to delete ${asset.product_name} (${asset.asset_tag})? This action cannot be undone.`)) {
+                executeDelete(asset);
             }
         }
+    };
+
+    const executeDelete = async (asset) => {
+        try {
+            // Log activity before deletion
+            await logActivity(
+              'asset_deleted',
+              `Deleted asset: ${asset.product_name} (${asset.asset_tag})`,
+              asset.id,
+              userId,
+              { deleted_asset_name: asset.product_name, deleted_asset_tag: asset.asset_tag }
+            );
+
+            const { error } = await supabase.from('assets').delete().eq('id', asset.id);
+            if (error) throw error;
+            setAssets(currentAssets => currentAssets.filter(a => a.id !== asset.id));
+            addNotification('Asset deleted successfully.', 'success');
+            
+            if (selectedAsset && selectedAsset.id === asset.id) {
+                setSelectedAsset(null);
+            }
+        } catch (error) {
+            addNotification(`Error deleting asset: ${error.message}`, 'error');
+        }
+        setShowMfaModal(false);
+        setAssetToDelete(null);
     };
 
     const handleAssetUpdate = (updatedAsset) => {
@@ -258,8 +302,36 @@ const AssetList = () => {
                 </div>
             </div>
             
-            {selectedAsset && <AssetDetailPanel asset={selectedAsset} onClose={closePanel} onEdit={() => { navigate(`/asset-registration?id=${selectedAsset.id}`); closePanel(); }} onAssetUpdate={handleAssetUpdate} />}
-            {qrAsset && <QRCodeModal asset={qrAsset} onClose={handleCloseQrModal} />}
+            <AnimatePresence>
+                {selectedAsset && (
+                    <AssetDetailPanel 
+                        asset={selectedAsset} 
+                        onClose={closePanel} 
+                        onEdit={() => { navigate(`/asset-registration?id=${selectedAsset.id}`); closePanel(); }} 
+                        onAssetUpdate={handleAssetUpdate} 
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {qrAsset && (
+                    <QRCodeModal 
+                        asset={qrAsset} 
+                        onClose={handleCloseQrModal} 
+                    />
+                )}
+            </AnimatePresence>
+
+            {showMfaModal && (
+                <MfaChallengeModal
+                    factorId={enrolledFactors[0].id}
+                    onCancel={() => {
+                        setShowMfaModal(false);
+                        setAssetToDelete(null);
+                    }}
+                    onSuccess={() => executeDelete(assetToDelete)}
+                />
+            )}
         </div>
     );
 };

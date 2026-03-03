@@ -29,7 +29,7 @@ const AssetDetailsSection = ({ register, errors, control }) => {
                 <option value="Software">Software</option>
                 <option value="Other">Other</option>
             </select>
-            {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
+            {errors.category && <p className="text-sm text-red-500">{errors.category.message}</p>}
         </div>
 
         {/* Product Name */}
@@ -40,7 +40,7 @@ const AssetDetailsSection = ({ register, errors, control }) => {
                 placeholder="e.g. Dell Latitude 7420"
                 className={inputClass}
             />
-            {errors.product_name && <p className="text-xs text-red-500">{errors.product_name.message}</p>}
+            {errors.product_name && <p className="text-sm text-red-500">{errors.product_name.message}</p>}
         </div>
 
         {/* Serial Number */}
@@ -51,7 +51,7 @@ const AssetDetailsSection = ({ register, errors, control }) => {
                 placeholder="e.g. SN-998877"
                 className={inputClass}
             />
-            {errors.serial_number && <p className="text-xs text-red-500">{errors.serial_number.message}</p>}
+            {errors.serial_number && <p className="text-sm text-red-500">{errors.serial_number.message}</p>}
         </div>
       </div>
     </div>
