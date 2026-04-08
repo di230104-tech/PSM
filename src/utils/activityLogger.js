@@ -1,9 +1,9 @@
 import { supabase } from '../lib/supabaseClient';
 
-export const logActivity = async (type, description, asset_id = null, user_id = null, details = {}) => {
+export const logActivity = async (type, description, asset_tag = null, user_id = null, details = {}) => {
   try {
     const { data, error } = await supabase.from('activities').insert([
-      { type, description, asset_id, user_id, details }
+      { type, description, asset_tag, user_id, details }
     ]);
 
     if (error) {

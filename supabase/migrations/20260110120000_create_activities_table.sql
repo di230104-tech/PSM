@@ -5,7 +5,7 @@ create table
     type text not null,
     description text,
     user_id uuid references auth.users (id),
-    asset_id uuid references public.assets (id) on delete cascade,
+    asset_id uuid references public.assets (asset_tag) on delete cascade,
     details jsonb
   );
 

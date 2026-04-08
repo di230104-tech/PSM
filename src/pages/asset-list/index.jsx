@@ -18,7 +18,7 @@ import MfaChallengeModal from '../../components/ui/MfaChallengeModal'; // Import
 // --- QR Code Modal Component ---
 const QRCodeModal = ({ asset, onClose }) => {
     if (!asset) return null;
-    const qrValue = JSON.stringify({ id: asset.id, tag: asset.asset_tag, serial: asset.serial_number });
+    const qrValue = JSON.stringify({ tag: asset.asset_tag, serial: asset.serial_number });
     const handlePrint = () => window.print();
 
     return (
@@ -226,17 +226,17 @@ const AssetList = () => {
             await logActivity(
               'asset_deleted',
               `Deleted asset: ${asset.product_name} (${asset.asset_tag})`,
-              asset.id,
+              asset.asset_tag,
               userId,
               { deleted_asset_name: asset.product_name, deleted_asset_tag: asset.asset_tag }
             );
 
-            const { error } = await supabase.from('assets').delete().eq('id', asset.id);
+            const { error } = await supabase.from('assets').delete().eq('asset_tag', asset.asset_tag);
             if (error) throw error;
-            setAssets(currentAssets => currentAssets.filter(a => a.id !== asset.id));
+            setAssets(currentAssets => currentAssets.filter(a => a.asset_tag !== asset.asset_tag));
             addNotification('Asset deleted successfully.', 'success');
             
-            if (selectedAsset && selectedAsset.id === asset.id) {
+            if (selectedAsset && selectedAsset.asset_tag === asset.asset_tag) {
                 setSelectedAsset(null);
             }
         } catch (error) {
@@ -248,7 +248,7 @@ const AssetList = () => {
 
     const handleAssetUpdate = (updatedAsset) => {
         setAssets(currentAssets =>
-            currentAssets.map(a => (a.id === updatedAsset.id ? { ...a, ...updatedAsset } : a))
+            currentAssets.map(a => (a.asset_tag === updatedAsset.asset_tag ? { ...a, ...updatedAsset } : a))
         );
         setSelectedAsset(prev => ({ ...prev, ...updatedAsset }));
     };
@@ -307,7 +307,7 @@ const AssetList = () => {
                     <AssetDetailPanel 
                         asset={selectedAsset} 
                         onClose={closePanel} 
-                        onEdit={() => { navigate(`/asset-registration?id=${selectedAsset.id}`); closePanel(); }} 
+                        onEdit={() => { navigate(`/asset-registration?tag=${selectedAsset.asset_tag}`); closePanel(); }} 
                         onAssetUpdate={handleAssetUpdate} 
                     />
                 )}

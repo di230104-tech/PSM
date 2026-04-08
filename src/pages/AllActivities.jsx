@@ -57,7 +57,7 @@ const AllActivities = () => {
           description: activity.description,
           user: profilesMap[activity.user_id] ? (profilesMap[activity.user_id].full_name || profilesMap[activity.user_id].email) : 'Unknown User',
           timestamp: new Date(activity.created_at),
-          assetId: activity.assets?.asset_tag || activity.asset_id,
+          assetId: activity.assets?.asset_tag || activity.asset_tag,
         }));
         setActivities(formattedActivities);
       } catch (error) {

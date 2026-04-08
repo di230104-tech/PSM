@@ -20,11 +20,11 @@ export const useUpdateAssetStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, status }) => {
+    mutationFn: async ({ asset_tag, status }) => {
       const { data, error } = await supabase
         .from('assets')
         .update({ status })
-        .eq('id', id)
+        .eq('asset_tag', asset_tag)
         .select();
 
       if (error) {
@@ -42,7 +42,7 @@ export const useUpdateAssetStatus = () => {
       // Optimistically update to the new value
       queryClient.setQueryData(['assets'], (old) =>
         old.map((asset) =>
-          asset.id === newAsset.id ? { ...asset, ...newAsset } : asset
+          asset.asset_tag === newAsset.asset_tag ? { ...asset, ...newAsset } : asset
         )
       );
 

@@ -239,7 +239,7 @@ const QuickViewPanel = ({ asset, isOpen, onClose, onEdit, onPrintQR }) => {
           <Button
             variant="default"
             iconName="ExternalLink"
-            onClick={() => window.location.href = `/asset-details?id=${asset?.id}`}
+            onClick={() => window.location.href = `/asset-details/${asset?.asset_tag}`}
             className="w-full mt-3"
           >
             View Full Details
