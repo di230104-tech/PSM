@@ -5,5 +5,5 @@ alter table public.activities drop constraint if exists activities_asset_id_fkey
 alter table public.activities
 add constraint activities_asset_id_fkey
 foreign key (asset_id)
-references public.assets (id)
+references public.assets (asset_tag)
 on delete set null;

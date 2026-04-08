@@ -19,7 +19,7 @@ const AssetDetailPanel = ({ asset, onClose, onEdit, onAssetUpdate }) => {
     if (!file) return;
 
     setIsUploading(true);
-    const fileName = `${asset.id}-${Date.now()}-${file.name}`;
+    const fileName = `${asset.asset_tag}-${Date.now()}-${file.name}`;
     
     try {
       // First, attempt to remove the old image if one exists
@@ -46,7 +46,7 @@ const AssetDetailPanel = ({ asset, onClose, onEdit, onAssetUpdate }) => {
       const { data: updatedAsset, error: dbError } = await supabase
         .from('assets')
         .update({ image_url: publicUrl })
-        .eq('id', asset.id)
+        .eq('asset_tag', asset.asset_tag)
         .select()
         .single();
 
@@ -60,7 +60,7 @@ const AssetDetailPanel = ({ asset, onClose, onEdit, onAssetUpdate }) => {
       await logActivity(
         'asset_image_updated',
         `Updated image for ${asset.product_name} (${asset.asset_tag})`,
-        asset.id,
+        asset.asset_tag,
         userId, // Pass the userId here
         { previous_image_url: asset.image_url, new_image_url: publicUrl }
       );

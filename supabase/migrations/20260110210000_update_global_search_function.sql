@@ -22,11 +22,11 @@ RETURNS TABLE(
 BEGIN
     RETURN QUERY
     SELECT
-        a.id::text,
+        a.asset_tag as id,
         'asset' as type,
         a.product_name as name,
         'Serial: ' || a.serial_number || ', Tag: ' || a.asset_tag as description,
-        '/asset-details/' || a.id::text as path,
+        '/asset-details/' || a.asset_tag as path,
         a.product_name,
         a.model,
         a.serial_number,
@@ -38,7 +38,7 @@ BEGIN
           FROM public.loans l
           LEFT JOIN public.employees e ON e.id = l.employee_id
           LEFT JOIN public.departments d ON d.id = l.department_id
-          WHERE l.asset_id = a.id AND l.status = 'active'
+          WHERE l.asset_tag = a.asset_tag AND l.status = 'active'
           LIMIT 1
         ) as assigned_to,
         a.created_at as date_added,
@@ -60,7 +60,7 @@ BEGIN
         e.id::text,
         'employee' as type,
         e.full_name as name,
-        'Email: ' || e.email || ', ID: ' || e.employee_number as description,
+        'Email: ' || e.email || ', ID: ' || e.employee_id as description,
         '/admin/employee-management' as path,
         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 50, false, NULL, NULL
     FROM
@@ -68,7 +68,7 @@ BEGIN
     WHERE
         e.full_name ILIKE '%' || search_term || '%' OR
         e.email ILIKE '%' || search_term || '%' OR
-        e.employee_number ILIKE '%' || search_term || '%'
+        e.employee_id ILIKE '%' || search_term || '%'
 
     UNION ALL
 

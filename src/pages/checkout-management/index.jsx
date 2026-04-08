@@ -58,7 +58,7 @@ const CheckoutManagement = () => {
         expected_return_date,
         status,
         notes,
-        assets (id, product_name, category),
+        assets (asset_tag, product_name, category),
         employees (id, full_name, email, departments (name)),
         departments (id, name)
       `)
@@ -72,7 +72,7 @@ const CheckoutManagement = () => {
 
     return data.map(loan => ({
       id: loan.id,
-      assetId: loan.assets.id,
+      assetId: loan.assets.asset_tag,
       assetName: loan.assets.product_name,
       assetCategory: loan.assets.category,
       assignedTo: loan.employees ? {
@@ -187,7 +187,7 @@ const CheckoutManagement = () => {
 
     // Process checkout
     const newLoan = {
-      asset_id: selectedAsset.id,
+      asset_tag: selectedAsset.asset_tag,
       employee_id: employee.id,
       checkout_date: new Date().toISOString(),
       expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -202,7 +202,7 @@ const CheckoutManagement = () => {
       setNotifications((prev) => [...prev, { id: Date.now(), message: `Error checking out asset (INSERT failed): ${loanError.message}`, type: "error" }]);
     } else {
       console.log('Loan INSERT successful. Now updating asset status and refetching data...'); // Success log
-      const { error: assetError } = await supabase.from('assets').update({ status: 'checked_out', current_department_id: employee.department_id }).eq('id', selectedAsset.id);
+      const { error: assetError } = await supabase.from('assets').update({ status: 'checked_out', current_department_id: employee.department_id }).eq('asset_tag', selectedAsset.asset_tag);
       if (assetError) {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
       } else {
@@ -211,7 +211,7 @@ const CheckoutManagement = () => {
         await logActivity(
           'asset_assigned',
           `Asset ${selectedAsset.product_name} (${selectedAsset.asset_tag}) assigned to employee ${employee.full_name}`,
-          selectedAsset.id,
+          selectedAsset.asset_tag,
           userId,
           { assigned_to_type: 'employee', employee_id: employee.id, employee_name: employee.full_name }
         );
@@ -235,7 +235,7 @@ const CheckoutManagement = () => {
 
     // Process checkout to department
     const newLoan = {
-      asset_id: selectedAsset.id,
+      asset_tag: selectedAsset.asset_tag,
       department_id: department.id, // Use department_id
       checkout_date: new Date().toISOString(),
       expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -250,7 +250,7 @@ const CheckoutManagement = () => {
       setNotifications((prev) => [...prev, { id: Date.now(), message: `Error checking out asset to department (INSERT failed): ${loanError.message}`, type: "error" }]);
     } else {
       console.log('Loan INSERT successful. Now updating asset status and refetching data...'); // Success log
-      const { error: assetError } = await supabase.from('assets').update({ status: 'checked_out', current_department_id: department.id }).eq('id', selectedAsset.id);
+      const { error: assetError } = await supabase.from('assets').update({ status: 'checked_out', current_department_id: department.id }).eq('asset_tag', selectedAsset.asset_tag);
 
       if (assetError) {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
@@ -260,7 +260,7 @@ const CheckoutManagement = () => {
         await logActivity(
           'asset_assigned',
           `Asset ${selectedAsset.product_name} (${selectedAsset.asset_tag}) assigned to department ${department.name}`,
-          selectedAsset.id,
+          selectedAsset.asset_tag,
           userId,
           { assigned_to_type: 'department', department_id: department.id, department_name: department.name }
         );
@@ -295,7 +295,7 @@ const CheckoutManagement = () => {
       setNotifications((prev) => [...prev, { id: Date.now(), message: `Error checking in asset: ${loanError.message}`, type: "error" }]);
     } else {
       const loan = activeLoans.find((l) => l.id === loanId);
-      const { error: assetError } = await supabase.from('assets').update({ status: 'in_storage', condition: condition, current_department_id: null }).eq('id', loan.assetId);
+      const { error: assetError } = await supabase.from('assets').update({ status: 'in_storage', condition: condition, current_department_id: null }).eq('asset_tag', loan.assetId);
 
       if (assetError) {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
@@ -328,7 +328,7 @@ const CheckoutManagement = () => {
     }
 
     if (asset && asset.status !== 'in_storage') {
-        const loan = activeLoans.find((l) => l.assetId === asset.id);
+        const loan = activeLoans.find((l) => l.assetId === asset.asset_tag);
         if(loan){
             handleCheckIn(loan);
             return;
@@ -343,20 +343,20 @@ const CheckoutManagement = () => {
         assets ( * ),
         employees ( *, departments ( * ) )
       `)
-      .eq('id', barcode)
+      .eq('asset_tag', barcode)
       .single();
 
     if (loan) {
         const formattedLoan = {
             id: loan.id,
-            assetId: loan.assets.id,
+            assetId: loan.assets.asset_tag,
             assetName: loan.assets.product_name,
             assetCategory: loan.assets.category,
-            employee: {
+            employee: loan.employees ? {
               id: loan.employees.id,
               name: loan.employees.full_name,
-              department: loan.employees.departments.name,
-            },
+              department: loan.employees.departments?.name,
+            } : null,
             checkoutDate: new Date(loan.checkout_date),
             expectedReturnDate: new Date(loan.expected_return_date),
             status: loan.status,

@@ -56,9 +56,9 @@ const draftAssetSchema = z.object({
 const AssetRegistration = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const assetId = searchParams.get('id');
+  const assetTag = searchParams.get('tag');
   const mode = searchParams.get('mode'); // Get mode from URL
-  const isEditMode = assetId !== null;
+  const isEditMode = assetTag !== null;
   const isBulkMode = mode === 'bulk';
 
   const [notifications, setNotifications] = useState([]);
@@ -100,7 +100,7 @@ const AssetRegistration = () => {
       if (!isEditMode) return;
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.from('assets').select('*').eq('id', assetId).single();
+        const { data, error } = await supabase.from('assets').select('*').eq('asset_tag', assetTag).single();
         if (error) throw error;
         if (data) {
           setAsset(data);
@@ -130,7 +130,7 @@ const AssetRegistration = () => {
       fetchAssetForEdit();
       fetchDrafts();
     }
-  }, [assetId, isEditMode, isBulkMode, reset, setValue]);
+  }, [assetTag, isEditMode, isBulkMode, reset, setValue]);
 
   const fetchDrafts = async () => {
     const { data, error } = await supabase
@@ -240,13 +240,13 @@ const AssetRegistration = () => {
     try {
       if (isEditMode) {
         // --- UPDATE ---
-        const { error } = await supabase.from('assets').update(assetData).eq('id', assetId);
+        const { error } = await supabase.from('assets').update(assetData).eq('asset_tag', assetTag);
         if (error) throw error;
         // Log activity for asset update
         await logActivity(
           'asset_updated',
           `Updated asset: ${assetData.product_name} (${assetData.serial_number})`,
-          assetId, // Use assetId here
+          assetTag, 
           userId,
           { changes: assetData } // Log the changes made
         );
@@ -266,7 +266,7 @@ const AssetRegistration = () => {
         await logActivity(
           'asset_added',
           `Added new asset: ${assetData.product_name} (${asset_tag})`,
-          data.id, // Use the newly created asset's ID
+          data.asset_tag, 
           userId,
           { new_asset_data: assetData }
         );

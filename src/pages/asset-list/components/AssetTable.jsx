@@ -67,7 +67,7 @@ const AssetTable = ({
                 </thead>
                 <tbody className="divide-y divide-border">
                     {assets.map((asset) => (
-                        <tr key={asset.id} className="hover:bg-muted/30 transition-colors">
+                        <tr key={asset.asset_tag} className="hover:bg-muted/30 transition-colors">
 
                             <td className="px-6 py-4">
                                 <button onClick={() => onAssetClick(asset)} className="font-medium text-primary hover:underline">

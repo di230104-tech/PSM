@@ -30,7 +30,7 @@ const AssetDetails = () => {
     const fetchAsset = async () => {
       if (!id) {
         setIsLoading(false);
-        addNotification({ type: 'error', message: 'No asset ID provided.' });
+        addNotification({ type: 'error', message: 'No asset Tag provided.' });
         return;
       }
 
@@ -38,8 +38,8 @@ const AssetDetails = () => {
       try {
         const { data, error } = await supabase
           .from('assets')
-          .select('*, department:departments(name), supplier:suppliers(name), assigned_to:employees(full_name)')
-          .eq('id', id)
+          .select('*, department:departments(name), supplier:suppliers(company_name), assigned_to:employees(full_name)')
+          .eq('asset_tag', id)
           .single();
 
         if (error) throw error;
@@ -47,13 +47,13 @@ const AssetDetails = () => {
         if (data) {
           const formattedAsset = {
             ...data,
-            location_name: data.department.name || 'N/A',
-            supplier_name: data.supplier.company_name || 'N/A',
+            location_name: data.department?.name || 'N/A',
+            supplier_name: data.supplier?.company_name || 'N/A',
             assigned_to_name: data.assigned_to?.full_name || 'Unassigned',
           };
           setAsset(formattedAsset);
         } else {
-          addNotification({ type: 'error', message: `Asset with ID ${id} not found.` });
+          addNotification({ type: 'error', message: `Asset with Tag ${id} not found.` });
         }
       } catch (error) {
         console.error("Error fetching asset details:", error);
