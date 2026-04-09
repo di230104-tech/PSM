@@ -32,6 +32,7 @@ const EmployeeSearchModal = ({ onEmployeeSelect, onClose }) => {
         const formattedEmployees = data.map(emp => ({
           id: emp.id,
           name: emp.full_name,
+          full_name: emp.full_name,
           email: emp.email,
           department: emp.departments ? emp.departments.name : 'N/A',
           employeeId: emp.employee_number, // Corrected to use employee_number
