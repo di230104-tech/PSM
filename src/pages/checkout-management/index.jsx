@@ -206,7 +206,7 @@ const CheckoutManagement = () => {
       if (assetError) {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
       } else {
-        setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset ${selectedAsset.product_name} checked out to ${employee.name}`, type: "success" }]);
+        setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset ${selectedAsset.product_name} checked out to ${employee.full_name}`, type: "success" }]);
         // Log activity for asset assigned to employee
         await logActivity(
           'asset_assigned',
