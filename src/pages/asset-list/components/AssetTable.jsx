@@ -2,6 +2,7 @@ import React from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import { formatAssetStatus } from '../../../utils/formatters';
+import { calculateEOLDate, getEOLStatus } from '../../../utils/assetUtils';
 
 const AssetTable = ({
     assets,
@@ -61,47 +62,79 @@ const AssetTable = ({
                                 <Icon name={getSortIcon('status')} size={14} />
                             </button>
                         </th>
+                        <th className="px-6 py-4 font-medium text-center">EOL Status</th>
                         <th className="px-6 py-4 font-medium text-right">Price</th>
                         <th className="px-6 py-4 font-medium text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                    {assets.map((asset) => (
-                        <tr key={asset.asset_tag} className="hover:bg-muted/30 transition-colors">
+                    {assets.map((asset) => {
+                        const eolDate = calculateEOLDate(asset.purchase_date, asset.lifespan_months || (asset.lifespan_years * 12));
+                        const eolStatus = getEOLStatus(eolDate);
+                        
+                        return (
+                            <tr 
+                                key={asset.asset_tag} 
+                                className="hover:bg-muted/50 transition-colors cursor-pointer group"
+                                onClick={() => onAssetClick(asset)}
+                            >
 
-                            <td className="px-6 py-4">
-                                <button onClick={() => onAssetClick(asset)} className="font-medium text-primary hover:underline">
-                                    {asset.asset_tag}
-                                </button>
-                            </td>
-                            <td className="px-6 py-4">
-                                <div className="font-medium text-foreground">{asset.product_name}</div>
-                                <div className="text-xs text-muted-foreground">{asset.serial_number}</div>
-                            </td>
-                            <td className="px-6 py-4">{asset.category}</td>
-                            <td className="px-6 py-4">{asset.departments?.name || 'Unknown'}</td>
-                            <td className="px-6 py-4 text-muted-foreground">{asset.suppliers?.company_name || 'Unknown'}</td>
-                            <td className="px-6 py-4">
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(asset.status)}`}>
-                                    {formatAssetStatus(asset.status)}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-right font-medium">
-                                {asset.purchase_price ? `RM ${asset.purchase_price.toLocaleString()}` : '-'}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                                <Button variant="ghost" size="icon" onClick={() => onAssetClick(asset)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                    <Icon name="Eye" size={16} />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => onOpenQrModal(asset)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                    <Icon name="QrCode" size={16} />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => onDeleteAsset(asset)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                                    <Icon name="Trash" size={16} />
-                                </Button>
-                            </td>
-                        </tr>
-                    ))}
+                                <td className="px-6 py-4">
+                                    <span className="font-medium text-primary group-hover:underline">
+                                        {asset.asset_tag}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="font-medium text-foreground">{asset.product_name}</div>
+                                    <div className="text-xs text-muted-foreground">{asset.serial_number}</div>
+                                </td>
+                                <td className="px-6 py-4">{asset.category}</td>
+                                <td className="px-6 py-4">{asset.departments?.name || 'N/A'}</td>
+                                <td className="px-6 py-4 text-muted-foreground">{asset.suppliers?.company_name || 'N/A'}</td>
+                                <td className="px-6 py-4">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(asset.status)}`}>
+                                        {formatAssetStatus(asset.status)}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${eolStatus.color}`}>
+                                        {eolStatus.status}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-right font-medium">
+                                    {asset.purchase_price ? `RM ${asset.purchase_price.toLocaleString()}` : '-'}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    <div className="flex items-center justify-center gap-1">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={(e) => { e.stopPropagation(); onAssetClick(asset); }} 
+                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                        >
+                                            <Icon name="Eye" size={16} />
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={(e) => { e.stopPropagation(); onOpenQrModal(asset); }} 
+                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                        >
+                                            <Icon name="QrCode" size={16} />
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={(e) => { e.stopPropagation(); onDeleteAsset(asset); }} 
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        >
+                                            <Icon name="Trash" size={16} />
+                                        </Button>
+                                    </div>
+                                </td>
+                            </tr>
+                        );
+                    })}
                 </tbody>
             </table>
         </div>

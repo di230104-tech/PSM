@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabaseClient';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import { DashboardSkeleton } from '../../components/ui/LoadingState';
-import AssetDetailPanel from './components/AssetDetailPanel';
+import AssetQuickViewPanel from './components/AssetQuickViewPanel';
 import { NotificationContainer } from '../../components/ui/NotificationToast';
 import { formatAssetStatus } from '../../utils/formatters';
 import { useSelector } from 'react-redux'; // Import useSelector
@@ -303,14 +303,11 @@ const AssetList = () => {
             </div>
             
             <AnimatePresence>
-                {selectedAsset && (
-                    <AssetDetailPanel 
-                        asset={selectedAsset} 
-                        onClose={closePanel} 
-                        onEdit={() => { navigate(`/asset-registration?tag=${selectedAsset.asset_tag}`); closePanel(); }} 
-                        onAssetUpdate={handleAssetUpdate} 
-                    />
-                )}
+                <AssetQuickViewPanel 
+                    isOpen={!!selectedAsset} 
+                    onClose={closePanel} 
+                    asset={selectedAsset} 
+                />
             </AnimatePresence>
 
             <AnimatePresence>

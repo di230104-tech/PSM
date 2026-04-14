@@ -83,8 +83,8 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
   };
 
   const handleSuggestionClick = (suggestion) => {
-    if (suggestion.path) {
-      navigate(suggestion.path);
+    if (suggestion.url) {
+      navigate(suggestion.url);
     }
     setShowSuggestions(false);
     setSearchQuery('');
@@ -180,14 +180,14 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
                   </div>
                   {suggestions?.map((suggestion) => (
                     <button
-                      key={suggestion?.id + suggestion.type}
+                      key={suggestion?.result_id + suggestion.result_type}
                       onClick={() => handleSuggestionClick(suggestion)}
                       className="w-full flex items-center space-x-3 px-3 py-3 text-left hover:bg-muted rounded-lg transition-colors"
                     >
-                      <Icon name={getSuggestionIcon(suggestion.type)} size={16} className="text-muted-foreground flex-shrink-0" />
+                      <Icon name={getSuggestionIcon(suggestion.result_type)} size={16} className="text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{suggestion.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{suggestion.description}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{suggestion.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{suggestion.subtitle}</p>
                       </div>
                       <Icon name="ArrowRight" size={14} className="text-muted-foreground flex-shrink-0" />
                     </button>
