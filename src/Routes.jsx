@@ -8,7 +8,7 @@ import MainLayout from "components/layout/MainLayout"; // Import MainLayout
 // Pages
 import NotFound from "pages/NotFound";
 import SearchResults from './pages/search-results';
-import LifecyclePlanning from './pages/lifecycle-planning';
+import LifecycleDashboard from './pages/lifecycle-dashboard';
 import AssetListPage from './pages/asset-list';
 import AssetDetails from './pages/asset-details';
 import AssetRegistration from './pages/asset-registration';
@@ -22,6 +22,7 @@ import DepartmentManagement from 'pages/admin/DepartmentManagement';
 import AllActivities from 'pages/AllActivities'; // Import AllActivities
 import BulkImportTemplate from 'pages/BulkImportTemplate'; // Import BulkImportTemplate
 import MfaSetup from 'pages/MfaSetup';
+import WriteOffsPage from 'pages/write-offs';
 
 const Routes = () => {
   return (
@@ -47,12 +48,13 @@ const Routes = () => {
             <Route path="/checkout-management" element={<CheckoutManagement />} />
             <Route path="/supplier-management" element={<SupplierManagement />} />
             <Route path="/search-results" element={<SearchResults />} />
-            <Route path="/lifecycle-planning" element={<LifecyclePlanning />} />
+            <Route path="/lifecycle-planning" element={<LifecycleDashboard />} />
             <Route path="/asset-list" element={<AssetListPage />} />
             <Route path="/asset-details/:asset_tag" element={<AssetDetails />} />
             <Route path="/asset-registration" element={<AssetRegistration />} />
             <Route path="/bulk-import-template" element={<BulkImportTemplate />} /> {/* New route for BulkImportTemplate */}
             <Route path="/all-activities" element={<AllActivities />} /> {/* New route for AllActivities */}
+            <Route path="/write-offs" element={<WriteOffsPage />} />
             <Route path="/mfa-setup" element={<MfaSetup />} />
 
             {/* Admin Routes */}

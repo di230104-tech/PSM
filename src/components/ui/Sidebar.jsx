@@ -48,6 +48,13 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
       category: 'Asset Management and Workflow'
     },
     {
+      label: 'Write-Offs & Disposals',
+      path: '/write-offs',
+      icon: 'Trash2',
+      roles: ['system_admin', 'it_staff'],
+      category: 'Asset Management and Workflow'
+    },
+    {
       label: 'Supplier Management',
       path: '/supplier-management',
       icon: 'Truck',

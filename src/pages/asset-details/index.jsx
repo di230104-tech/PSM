@@ -13,6 +13,8 @@ import MaintenanceTab from './components/MaintenanceTab';
 import AttachmentsTab from './components/AttachmentsTab';
 import AuditTab from './components/AuditTab';
 import QRCodeModal from './components/QRCodeModal';
+import WriteOffModal from '../../components/WriteOffModal';
+import { calculateEOLDate, getEOLStatus } from '../../utils/assetUtils';
 
 const AssetDetails = () => {
   const { asset_tag } = useParams();
@@ -23,6 +25,7 @@ const AssetDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showWriteOffModal, setShowWriteOffModal] = useState(false);
 
   // Data Payloads
   const [assetData, setAssetData] = useState(null);
@@ -117,6 +120,29 @@ const AssetDetails = () => {
     setShowQRModal(true);
   };
 
+  const handleWriteOffSuccess = (message) => {
+    // Show success notification and redirect back to list
+    navigate('/asset-list', { state: { message, type: 'success' } });
+  };
+
+  const isWriteOffDisabled = () => {
+    if (!assetData) return true;
+    
+    // Rule: status === 'broken' OR EOL passed
+    const isBroken = assetData.status === 'broken';
+    const eolDate = calculateEOLDate(assetData.purchase_date, assetData.lifespan_months || (assetData.lifespan_years * 12));
+    const eolStatus = getEOLStatus(eolDate);
+    const isExpired = eolStatus.status === 'Expired';
+    
+    return !(isBroken || isExpired);
+  };
+
+  const getWriteOffTooltip = () => {
+    if (!assetData) return '';
+    if (!isWriteOffDisabled()) return 'Decommission this asset from inventory';
+    return 'Only broken or expired (EOL) assets can be written off';
+  };
+
   const handleStatusAction = () => {
     const action = assetData?.status === 'checked_out' ? 'Check In' : 'Check Out';
     addNotification(`Redirecting to ${action} process...`, 'info');
@@ -175,6 +201,15 @@ const AssetDetails = () => {
           <Button variant="outline" iconName="Printer" onClick={handlePrintQR}>Print QR</Button>
           <Button variant="outline" iconName="Edit" onClick={handleEdit}>Edit Asset</Button>
           <Button 
+            variant="outline" 
+            className={`border-error/30 text-error hover:bg-error/10 ${isWriteOffDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
+            iconName="Trash2" 
+            onClick={() => !isWriteOffDisabled() && setShowWriteOffModal(true)}
+            title={getWriteOffTooltip()}
+          >
+            Write Off
+          </Button>
+          <Button 
             variant={assetData.status === 'checked_out' ? 'default' : 'primary'}
             iconName={assetData.status === 'checked_out' ? 'LogIn' : 'LogOut'}
             onClick={handleStatusAction}
@@ -226,6 +261,15 @@ const AssetDetails = () => {
           asset={assetData}
           isOpen={showQRModal}
           onClose={() => setShowQRModal(false)}
+        />
+      )}
+
+      {showWriteOffModal && (
+        <WriteOffModal
+          asset={assetData}
+          isOpen={showWriteOffModal}
+          onClose={() => setShowWriteOffModal(false)}
+          onSuccess={handleWriteOffSuccess}
         />
       )}
 

@@ -62,3 +62,28 @@ export const getEOLStatus = (eolDate) => {
     return { status: 'Active', color: 'text-success bg-success/10 border-success/20' };
   }
 };
+
+/**
+ * Calculates the current estimated value of an asset based on depreciation.
+ * Default 20% annual straight-line depreciation, capped at 80% total depreciation.
+ * 
+ * @param {string|Date} purchaseDate 
+ * @param {number} purchasePrice 
+ * @returns {number}
+ */
+export const calculateDepreciation = (purchaseDate, purchasePrice) => {
+  if (!purchaseDate || !purchasePrice) return 0;
+  
+  const pDate = new Date(purchaseDate);
+  const currentDate = new Date();
+  
+  // Calculate years owned
+  const yearsOwned = (currentDate - pDate) / (1000 * 60 * 60 * 24 * 365.25);
+  
+  // 20% per year straight-line depreciation
+  const annualDepreciationRate = 0.2;
+  const totalDepreciationPercentage = Math.min(annualDepreciationRate * yearsOwned, 0.8);
+  
+  const currentValue = Math.max(0, purchasePrice * (1 - totalDepreciationPercentage));
+  return currentValue;
+};

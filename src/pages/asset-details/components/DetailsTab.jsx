@@ -1,16 +1,9 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
-import { calculateEOLDate, getEOLStatus } from '../../../utils/assetUtils';
+import { calculateEOLDate, getEOLStatus, calculateDepreciation } from '../../../utils/assetUtils';
+import { formatCurrency } from '../../../utils/formatters';
 
 const DetailsTab = ({ asset }) => {
-  const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return 'RM 0.00';
-    return new Intl.NumberFormat('en-MY', {
-      style: 'currency',
-      currency: 'MYR'
-    })?.format(amount);
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -28,16 +21,6 @@ const DetailsTab = ({ asset }) => {
         day: 'numeric'
       });
     }
-  };
-
-  const calculateDepreciation = () => {
-    if (!asset.purchase_date || !asset.purchase_price) return 0;
-    const purchaseDate = new Date(asset.purchase_date);
-    const currentDate = new Date();
-    const yearsOwned = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
-    const annualDepreciation = asset.purchase_price * 0.2; // 20% per year
-    const totalDepreciation = Math.max(0, Math.min(annualDepreciation * yearsOwned, asset.purchase_price * 0.8));
-    return asset.purchase_price - totalDepreciation;
   };
 
   const getWarrantyStatus = () => {
@@ -62,7 +45,7 @@ const DetailsTab = ({ asset }) => {
   };
 
   const warrantyInfo = getWarrantyStatus();
-  const currentValue = calculateDepreciation();
+  const currentValue = calculateDepreciation(asset.purchase_date, asset.purchase_price);
   
   // Calculate EOL using the new utility
   const eolDate = calculateEOLDate(asset.purchase_date, asset.lifespan_months || (asset.lifespan_years * 12));
