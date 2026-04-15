@@ -215,7 +215,7 @@ const WriteOffsPage = () => {
                         </thead>
                         <tbody className="divide-y divide-border">
                             {filteredAssets.length === 0 ? (
-                                <tr>
+                                <tr key="empty-state">
                                     <td colSpan="6" className="px-6 py-12 text-center text-muted-foreground">
                                         <Icon name="Inbox" size={48} className="mx-auto mb-4 opacity-20" />
                                         <p>No written-off assets found matching your criteria.</p>
@@ -223,7 +223,7 @@ const WriteOffsPage = () => {
                                 </tr>
                             ) : (
                                 filteredAssets.map((asset) => (
-                                    <tr key={asset.id} className="hover:bg-muted/30 transition-colors">
+                                    <tr key={asset.asset_tag} className="hover:bg-muted/30 transition-colors">
                                         <td className="px-6 py-4 font-mono font-medium text-primary">
                                             {asset.asset_tag}
                                         </td>

@@ -88,9 +88,18 @@ const AssetDetails = () => {
             setAuditData(formattedAudit);
           }
 
-          // 3. Fetch Maintenance records (Mocked as the table doesn't exist yet)
-          // const { data: maintenance, error: maintError } = await supabase.from('maintenance').select('*').eq('asset_tag', asset_tag).order('date', { ascending: false });
-          setMaintenanceData([]); // Table currently missing, mocking with empty array
+          // 3. Fetch Maintenance records
+          const { data: maintenance, error: maintError } = await supabase
+            .from('maintenance')
+            .select('*')
+            .eq('asset_tag', asset_tag)
+            .order('maintenance_date', { ascending: false });
+
+          if (!maintError) {
+            setMaintenanceData(maintenance);
+          } else {
+            console.error('Error fetching maintenance records:', maintError);
+          }
 
           // 4. Attachments (Mocked or fetched from storage/assets table if applicable)
           setAttachmentsData([]); 
@@ -248,7 +257,7 @@ const AssetDetails = () => {
 
         {/* Tab Content Area */}
         <div className="p-6">
-          {activeTab === 'details' && <DetailsTab asset={assetData} />}
+          {activeTab === 'details' && <DetailsTab asset={assetData} maintenanceHistory={maintenanceData} />}
           {activeTab === 'maintenance' && <MaintenanceTab maintenanceHistory={maintenanceData} />}
           {activeTab === 'attachments' && <AttachmentsTab attachments={attachmentsData} />}
           {activeTab === 'audit' && <AuditTab auditTrail={auditData} />}

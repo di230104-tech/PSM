@@ -23,6 +23,9 @@ import AllActivities from 'pages/AllActivities'; // Import AllActivities
 import BulkImportTemplate from 'pages/BulkImportTemplate'; // Import BulkImportTemplate
 import MfaSetup from 'pages/MfaSetup';
 import WriteOffsPage from 'pages/write-offs';
+import SoftwareDashboard from 'pages/software';
+import SoftwareDetail from 'pages/software/SoftwareDetail';
+import ScannerPage from 'pages/scanner';
 
 const Routes = () => {
   return (
@@ -35,6 +38,8 @@ const Routes = () => {
 
           {/* --- Protected Routes --- */}
           {/* All routes inside this wrapper require login and get the MainLayout */}
+          <Route path="/scanner" element={<ProtectedRoute allowedRoles={['system_admin', 'manager', 'user']}><ScannerPage /></ProtectedRoute>} />
+          
           <Route 
             element={
               <ProtectedRoute allowedRoles={['system_admin', 'manager', 'user']}>
@@ -55,6 +60,8 @@ const Routes = () => {
             <Route path="/bulk-import-template" element={<BulkImportTemplate />} /> {/* New route for BulkImportTemplate */}
             <Route path="/all-activities" element={<AllActivities />} /> {/* New route for AllActivities */}
             <Route path="/write-offs" element={<WriteOffsPage />} />
+            <Route path="/software" element={<SoftwareDashboard />} />
+            <Route path="/software/:id" element={<SoftwareDetail />} />
             <Route path="/mfa-setup" element={<MfaSetup />} />
 
             {/* Admin Routes */}

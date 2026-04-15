@@ -26,6 +26,13 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
       category: 'Asset Management and Workflow'
     },
     {
+      label: 'QR Scan',
+      path: '/scanner',
+      icon: 'QrCode',
+      roles: ['system_admin', 'it_staff'],
+      category: 'Asset Management and Workflow'
+    },
+    {
       label: 'Add Asset',
       path: '/asset-registration',
       icon: 'Plus',
@@ -51,6 +58,13 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
       label: 'Write-Offs & Disposals',
       path: '/write-offs',
       icon: 'Trash2',
+      roles: ['system_admin', 'it_staff'],
+      category: 'Asset Management and Workflow'
+    },
+    {
+      label: 'Software Licenses',
+      path: '/software',
+      icon: 'Cloud',
       roles: ['system_admin', 'it_staff'],
       category: 'Asset Management and Workflow'
     },

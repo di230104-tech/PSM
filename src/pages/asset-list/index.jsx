@@ -156,7 +156,12 @@ const AssetList = () => {
             try {
                 let query = supabase
                     .from('assets')
-                    .select(`*, departments ( name ), suppliers ( company_name )`); // Ensure suppliers is selected
+                    .select(`
+                        *, 
+                        departments ( name ), 
+                        suppliers ( company_name ),
+                        maintenance ( cost )
+                    `);
 
                 // Apply filters
                 if (filters.searchQuery) {

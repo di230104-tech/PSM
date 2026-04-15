@@ -2,8 +2,14 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import { calculateEOLDate, getEOLStatus, calculateDepreciation } from '../../../utils/assetUtils';
 import { formatCurrency } from '../../../utils/formatters';
+import { 
+  calculateTotalMaintenanceCost, 
+  calculateTCO, 
+  getAssetHealthStatus, 
+  calculateMonthlyRunRate 
+} from '../../../utils/financialUtils';
 
-const DetailsTab = ({ asset }) => {
+const DetailsTab = ({ asset, maintenanceHistory = [], tabId, ...props }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -47,12 +53,18 @@ const DetailsTab = ({ asset }) => {
   const warrantyInfo = getWarrantyStatus();
   const currentValue = calculateDepreciation(asset.purchase_date, asset.purchase_price);
   
+  // Financial Calculations
+  const totalMaintenanceCost = calculateTotalMaintenanceCost(maintenanceHistory);
+  const tco = calculateTCO(asset.purchase_price, totalMaintenanceCost);
+  const healthStatus = getAssetHealthStatus(asset.purchase_price, totalMaintenanceCost);
+  const monthlyRunRate = calculateMonthlyRunRate(tco, asset.purchase_date);
+
   // Calculate EOL using the new utility
   const eolDate = calculateEOLDate(asset.purchase_date, asset.lifespan_months || (asset.lifespan_years * 12));
   const eolStatus = getEOLStatus(eolDate);
 
   return (
-    <div tabId="details">
+    <div {...props}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Basic Information */}
         <div className="space-y-6">
@@ -145,19 +157,41 @@ const DetailsTab = ({ asset }) => {
         {/* Financial Information */}
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-              <Icon name="DollarSign" size={20} className="mr-2" />
-              Financial Information
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center">
+                <Icon name="DollarSign" size={20} className="mr-2" />
+                Financial Information
+              </h3>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${healthStatus.color}`}>
+                <Icon name={healthStatus.icon} size={14} />
+                {healthStatus.status}
+              </div>
+            </div>
+            
+            <div className="space-y-3 bg-muted/20 p-4 rounded-lg border border-border/50">
+              <div className="flex justify-between py-2 border-b border-border/50">
                 <span className="text-muted-foreground">Purchase Price</span>
                 <span className="font-medium text-foreground">{formatCurrency(asset?.purchase_price)}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Current Value</span>
-                <span className="font-medium text-foreground">{formatCurrency(currentValue)}</span>
+              <div className="flex justify-between py-2 border-b border-border/50">
+                <span className="text-muted-foreground">Maintenance Cost</span>
+                <span className="font-medium text-error">{formatCurrency(totalMaintenanceCost)}</span>
               </div>
+              <div className="flex justify-between py-2 border-b border-border/50">
+                <span className="text-muted-foreground font-bold text-foreground">Total Cost (TCO)</span>
+                <span className="font-bold text-foreground text-lg">{formatCurrency(tco)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border/50">
+                <span className="text-muted-foreground">Monthly Run Rate</span>
+                <span className="font-medium text-foreground">{formatCurrency(monthlyRunRate)} / month</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-muted-foreground font-medium">Estimated Current Value</span>
+                <span className="font-medium text-success">{formatCurrency(currentValue)}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3 px-1">
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Purchase Date</span>
                 <span className="font-medium text-foreground">{formatDate(asset?.purchase_date)}</span>
