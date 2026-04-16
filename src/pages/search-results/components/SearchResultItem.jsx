@@ -40,8 +40,10 @@ const SearchResultItem = ({ asset, searchQuery, onAddToFavorites }) => {
   };
 
   const handleViewDetails = () => {
-    if (asset.url) {
-      navigate(asset.url);
+    if (asset.type === 'asset' && (asset.asset_tag || asset.id)) {
+      navigate(`/assets/${asset.asset_tag || asset.id}`);
+    } else if (asset.path) {
+      navigate(asset.path);
     }
   };
 
@@ -61,10 +63,10 @@ const SearchResultItem = ({ asset, searchQuery, onAddToFavorites }) => {
         {/* Icon / Image */}
         <div className="flex-shrink-0">
           <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-            {asset.result_type === 'asset' && asset.image ? (
+            {asset.type === 'asset' && asset.image ? (
               <Image src={asset.image} alt={asset.image_alt} className="w-full h-full object-cover" />
             ) : (
-              <Icon name={getIconForType(asset.result_type)} size={32} className="text-muted-foreground" />
+              <Icon name={getIconForType(asset.type)} size={32} className="text-muted-foreground" />
             )}
           </div>
         </div>
@@ -74,13 +76,13 @@ const SearchResultItem = ({ asset, searchQuery, onAddToFavorites }) => {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-foreground mb-1">
-                {highlightSearchTerm(asset.title, searchQuery)}
+                {highlightSearchTerm(asset.name, searchQuery)}
               </h3>
               <p className="text-sm text-muted-foreground mb-2">
-                {highlightSearchTerm(asset.subtitle, searchQuery)}
+                {highlightSearchTerm(asset.description, searchQuery)}
               </p>
               
-              {asset.result_type === 'asset' && (
+              {asset.type === 'asset' && (
                 <div className="flex items-center space-x-4 mb-3">
                   {asset.status && (
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(asset.status)}`}>
@@ -105,12 +107,12 @@ const SearchResultItem = ({ asset, searchQuery, onAddToFavorites }) => {
 
             {/* Quick Actions */}
             <div className="flex items-center space-x-2 ml-4">
-              {asset.result_type === 'asset' && (
+              {asset.type === 'asset' && (
                 <Button
                   variant="ghost"
                   size="icon"
                   iconName={asset.is_favorite ? "Heart" : "Heart"}
-                  onClick={() => onAddToFavorites(asset.result_id)}
+                  onClick={() => onAddToFavorites(asset.id)}
                   className={asset.is_favorite ? "text-error" : "text-muted-foreground hover:text-error"}
                 />
               )}

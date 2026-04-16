@@ -73,18 +73,22 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
     }, 300);
   };
 
-  const handleSearchSubmit = (e) => {
-    e?.preventDefault();
-    if (searchQuery?.trim() && onSearch) {
-      onSearch(searchQuery);
-      setShowSuggestions(false);
-      setSearchQuery('');
+  const handleSearchSubmit = () => {
+    const query = searchQuery.trim();
+    if (query) {
+      setTimeout(() => {
+        navigate(`/assets/${query}`);
+        setShowSuggestions(false);
+        setSearchQuery('');
+      }, 0);
     }
   };
 
   const handleSuggestionClick = (suggestion) => {
-    if (suggestion.url) {
-      navigate(suggestion.url);
+    if (suggestion.type === 'asset' && (suggestion.asset_tag || suggestion.id)) {
+      navigate(`/assets/${suggestion.asset_tag || suggestion.id}`);
+    } else if (suggestion.path) {
+      navigate(suggestion.path);
     }
     setShowSuggestions(false);
     setSearchQuery('');
@@ -110,7 +114,7 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
       try {
         addNotification('You have been successfully logged out.', 'success');
         await dispatch(logoutUser()).unwrap();
-        setTimeout(() => navigate('/login'), 1500); 
+        setTimeout(() => navigate('/login'), 1500);
       } catch (error) {
         console.error("Logout failed:", error);
         addNotification('Logout failed. Please try again.', 'error');
@@ -137,7 +141,7 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
 
         {/* Search Bar */}
         <div ref={searchRef} className="flex-1 max-w-2xl mx-4">
-          <form onSubmit={handleSearchSubmit} className="relative">
+          <div className="relative">
             <div className={`relative transition-all duration-200 ${
               isSearchExpanded ? 'w-full' : 'w-full md:w-96'
             }`}>
@@ -148,9 +152,9 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
                 onChange={handleSearchChange}
                 onFocus={() => setIsSearchExpanded(true)}
                 onBlur={() => setIsSearchExpanded(false)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit(); }}
                 className="pl-10 pr-4 h-10 bg-muted/50 border-border focus:bg-background"
-              />
-              <Icon
+              />              <Icon
                 name="Search"
                 size={18}
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
@@ -180,14 +184,14 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
                   </div>
                   {suggestions?.map((suggestion) => (
                     <button
-                      key={suggestion?.result_id + suggestion.result_type}
+                      key={(suggestion?.id || '') + (suggestion?.type || '')}
                       onClick={() => handleSuggestionClick(suggestion)}
                       className="w-full flex items-center space-x-3 px-3 py-3 text-left hover:bg-muted rounded-lg transition-colors"
                     >
-                      <Icon name={getSuggestionIcon(suggestion.result_type)} size={16} className="text-muted-foreground flex-shrink-0" />
+                      <Icon name={getSuggestionIcon(suggestion.type)} size={16} className="text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{suggestion.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{suggestion.subtitle}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{suggestion.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{suggestion.description}</p>
                       </div>
                       <Icon name="ArrowRight" size={14} className="text-muted-foreground flex-shrink-0" />
                     </button>
@@ -195,7 +199,7 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
                 </div>
               </div>
             )}
-          </form>
+          </div>
         </div>
 
         {/* Right Side Actions */}

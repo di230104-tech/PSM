@@ -62,16 +62,21 @@ const GlobalSearchBar = () => {
   };
 
   const handleSearchSubmit = (e) => {
-    console.log('handleSearchSubmit called');
-    e?.preventDefault();
-    if (searchQuery?.trim()) {
-      navigate(`/search-results?q=${encodeURIComponent(searchQuery)}`);
-      setShowSuggestions(false);
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (query) {
+      setTimeout(() => {
+        navigate(`/assets/${query}`);
+        setShowSuggestions(false);
+        setSearchQuery('');
+      }, 0);
     }
   };
 
   const handleSuggestionClick = (suggestion) => {
-    if (suggestion.path) {
+    if (suggestion.type === 'asset' && (suggestion.asset_tag || suggestion.id)) {
+      navigate(`/assets/${suggestion.asset_tag || suggestion.id}`);
+    } else if (suggestion.path) {
       navigate(suggestion.path);
     }
     setSearchQuery('');

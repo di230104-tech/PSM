@@ -353,7 +353,7 @@ const LifecycleDashboard = () => {
                         variant="ghost"
                         size="sm"
                         iconName="Eye"
-                        onClick={() => navigate(`/asset-details/${asset.asset_tag}`)}
+                        onClick={() => navigate(`/assets/${asset.asset_tag}`)}
                       >
                         View
                       </Button>

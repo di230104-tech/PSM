@@ -55,7 +55,7 @@ const Routes = () => {
             <Route path="/search-results" element={<SearchResults />} />
             <Route path="/lifecycle-planning" element={<LifecycleDashboard />} />
             <Route path="/asset-list" element={<AssetListPage />} />
-            <Route path="/asset-details/:asset_tag" element={<AssetDetails />} />
+            <Route path="/assets/:asset_tag" element={<AssetDetails />} />
             <Route path="/asset-registration" element={<AssetRegistration />} />
             <Route path="/bulk-import-template" element={<BulkImportTemplate />} /> {/* New route for BulkImportTemplate */}
             <Route path="/all-activities" element={<AllActivities />} /> {/* New route for AllActivities */}

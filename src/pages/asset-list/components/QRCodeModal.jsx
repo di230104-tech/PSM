@@ -6,7 +6,7 @@ import Button from '../../../components/ui/Button';
 const QRCodeModal = ({ asset, isOpen, onClose }) => {
   if (!isOpen) return null;
 
-  const qrCodeUrl = `${window.location.origin}/asset-details/${asset.id}`;
+  const qrCodeUrl = `${window.location.origin}/assets/${asset.asset_tag || asset.id}`;
 
   const handlePrint = () => {
     window.print();

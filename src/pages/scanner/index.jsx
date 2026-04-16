@@ -53,10 +53,10 @@ const ScannerPage = () => {
     if (decodedText && decodedText.startsWith('ISD-')) {
       if (html5QrCodeRef.current) {
         html5QrCodeRef.current.stop().then(() => {
-          navigate(`/asset-details/${decodedText}`);
+          navigate(`/assets/${decodedText}`);
         }).catch(err => {
           console.error("Error stopping after success:", err);
-          navigate(`/asset-details/${decodedText}`);
+          navigate(`/assets/${decodedText}`);
         });
       }
     }
@@ -70,7 +70,7 @@ const ScannerPage = () => {
   const handleManualSearch = (e) => {
     e.preventDefault();
     if (manualTag.trim()) {
-      navigate(`/asset-details/${manualTag.trim().toUpperCase()}`);
+      navigate(`/assets/${manualTag.trim().toUpperCase()}`);
     }
   };
 

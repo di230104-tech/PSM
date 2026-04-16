@@ -13,7 +13,7 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
 
   const handleViewFullDetails = () => {
     if (asset?.asset_tag) {
-      navigate(`/asset-details/${asset.asset_tag}`);
+      navigate(`/assets/${asset.asset_tag}`);
       onClose();
     }
   };
