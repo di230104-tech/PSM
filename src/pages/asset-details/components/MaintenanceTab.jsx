@@ -1,18 +1,29 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import AddMaintenanceModal from './AddMaintenanceModal';
 
-const MaintenanceTab = ({ maintenanceHistory }) => {
-  const [showAddForm, setShowAddForm] = useState(false);
+/**
+ * Maintenance History Tab Component
+ * Displays a timeline of maintenance activities for a specific asset.
+ * 
+ * @param {Object} props
+ * @param {string} props.assetTag - The tag of the asset
+ * @param {Array} props.maintenanceHistory - List of maintenance records from DB
+ * @param {Function} props.onSuccess - Callback to refresh data after adding a record
+ */
+const MaintenanceTab = ({ assetTag, maintenanceHistory, onSuccess }) => {
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    })?.format(amount);
+    })?.format(amount || 0);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString)?.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -22,54 +33,65 @@ const MaintenanceTab = ({ maintenanceHistory }) => {
 
   const getMaintenanceTypeColor = (type) => {
     switch (type?.toLowerCase()) {
-      case 'preventive':
-        return 'bg-success/10 text-success border-success/20';
-      case 'corrective':
-        return 'bg-warning/10 text-warning border-warning/20';
-      case 'emergency':
+      case 'repair':
         return 'bg-error/10 text-error border-error/20';
+      case 'routine service':
+        return 'bg-success/10 text-success border-success/20';
+      case 'hardware upgrade':
+        return 'bg-primary/10 text-primary border-primary/20';
+      case 'software patch':
+        return 'bg-info/10 text-info border-info/20';
       default:
         return 'bg-accent/10 text-accent border-accent/20';
     }
   };
 
-  const totalMaintenanceCost = maintenanceHistory?.reduce((sum, record) => sum + record?.cost, 0);
+  const totalMaintenanceCost = maintenanceHistory?.reduce((sum, record) => sum + (parseFloat(record?.cost) || 0), 0);
 
   return (
-    <div tabId="maintenance">
+    <div className="space-y-6">
       {/* Header with Summary */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">Maintenance History</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-1">Maintenance History</h3>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <span>Total Records: {maintenanceHistory?.length}</span>
-            <span>Total Cost: {formatCurrency(totalMaintenanceCost)}</span>
+            <span className="flex items-center gap-1.5">
+              <Icon name="ClipboardList" size={14} />
+              Total Records: {maintenanceHistory?.length || 0}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Icon name="DollarSign" size={14} />
+              Total Investment: {formatCurrency(totalMaintenanceCost)}
+            </span>
           </div>
         </div>
         <Button
-          variant="default"
+          variant="primary"
           iconName="Plus"
           iconPosition="left"
-          onClick={() => setShowAddForm(true)}
+          onClick={() => setShowAddModal(true)}
           className="mt-4 sm:mt-0"
         >
-          Add Maintenance Record
+          Log Maintenance
         </Button>
       </div>
+
       {/* Maintenance Timeline */}
       <div className="space-y-4">
-        {maintenanceHistory?.length === 0 ? (
-          <div className="text-center py-12">
-            <Icon name="Wrench" size={48} className="mx-auto text-muted-foreground mb-4" />
+        {!maintenanceHistory || maintenanceHistory.length === 0 ? (
+          <div className="text-center py-12 bg-muted/20 rounded-xl border border-dashed border-border">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <Icon name="Wrench" size={32} className="text-muted-foreground" />
+            </div>
             <h4 className="text-lg font-medium text-foreground mb-2">No Maintenance Records</h4>
-            <p className="text-muted-foreground mb-4">
-              This asset has no maintenance history recorded yet.
+            <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+              This asset has no maintenance history recorded yet. Start tracking repairs and upgrades today.
             </p>
             <Button
               variant="outline"
               iconName="Plus"
               iconPosition="left"
-              onClick={() => setShowAddForm(true)}
+              onClick={() => setShowAddModal(true)}
             >
               Add First Record
             </Button>
@@ -85,106 +107,59 @@ const MaintenanceTab = ({ maintenanceHistory }) => {
               {/* Maintenance Record Card */}
               <div className="flex space-x-4">
                 {/* Timeline Dot */}
-                <div className="flex-shrink-0 w-12 h-12 bg-card border-2 border-primary rounded-full flex items-center justify-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-card border-2 border-primary rounded-full flex items-center justify-center relative z-10 shadow-sm">
                   <Icon 
-                    name={record?.type === 'Emergency' ? 'AlertTriangle' : 'Wrench'} 
+                    name={record?.type === 'Repair' ? 'AlertTriangle' : 'Wrench'} 
                     size={20} 
                     className="text-primary" 
                   />
                 </div>
                 
                 {/* Record Content */}
-                <div className="flex-1 bg-card border border-border rounded-lg p-4">
+                <div className="flex-1 bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
                     <div>
-                      <h4 className="font-medium text-foreground mb-1">{record?.title}</h4>
-                      <div className="flex items-center space-x-3 text-sm text-muted-foreground">
-                        <span>{formatDate(record?.date)}</span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getMaintenanceTypeColor(record?.type)}`}>
-                          {record?.type}
+                      <h4 className="font-bold text-foreground mb-1">{record?.title || `${record?.type} - ${record?.vendor}`}</h4>
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Icon name="Calendar" size={14} />
+                          {formatDate(record?.maintenance_date)}
+                        </span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getMaintenanceTypeColor(record?.type)}`}>
+                          {record?.type || 'Standard'}
                         </span>
                       </div>
                     </div>
                     <div className="text-right mt-2 sm:mt-0">
-                      <div className="text-lg font-semibold text-foreground">
+                      <div className="text-lg font-bold text-foreground">
                         {formatCurrency(record?.cost)}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        by {record?.technician}
+                      <div className="text-sm text-muted-foreground flex items-center justify-end gap-1.5">
+                        <Icon name="User" size={14} />
+                        by {record?.vendor || record?.performed_by || 'Unknown'}
                       </div>
                     </div>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {record?.description}
+                  <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded border border-border/50">
+                    {record?.description || 'No description provided.'}
                   </p>
                   
-                  {record?.partsReplaced && record?.partsReplaced?.length > 0 && (
-                    <div className="border-t border-border pt-3">
-                      <h5 className="text-sm font-medium text-foreground mb-2">Parts Replaced:</h5>
-                      <div className="flex flex-wrap gap-2">
-                        {record?.partsReplaced?.map((part, partIndex) => (
-                          <span 
-                            key={partIndex}
-                            className="inline-flex items-center px-2 py-1 bg-muted text-muted-foreground text-xs rounded"
-                          >
-                            {part}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {record?.nextMaintenanceDate && (
-                    <div className="border-t border-border pt-3 mt-3">
-                      <div className="flex items-center text-sm">
-                        <Icon name="Calendar" size={16} className="mr-2 text-muted-foreground" />
-                        <span className="text-muted-foreground">Next maintenance due: </span>
-                        <span className="font-medium text-foreground ml-1">
-                          {formatDate(record?.nextMaintenanceDate)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Additional info could go here, like parts replaced if we add that later */}
                 </div>
               </div>
             </div>
           ))
         )}
       </div>
+
       {/* Add Maintenance Form Modal */}
-      {showAddForm && (
-        <div className="fixed inset-0 bg-black/50 z-300 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Add Maintenance Record</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                iconName="X"
-                onClick={() => setShowAddForm(false)}
-              />
-            </div>
-            <p className="text-muted-foreground text-sm">
-              This feature would integrate with the maintenance logging system to add new records.
-            </p>
-            <div className="flex justify-end space-x-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddForm(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                onClick={() => setShowAddForm(false)}
-              >
-                Add Record
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddMaintenanceModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        assetTag={assetTag}
+        onSuccess={onSuccess}
+      />
     </div>
   );
 };

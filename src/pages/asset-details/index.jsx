@@ -34,88 +34,103 @@ const AssetDetails = () => {
   const [auditData, setAuditData] = useState([]);
 
   // Fetch all required data for the asset
-  useEffect(() => {
-    const fetchAllData = async () => {
-      if (!asset_tag) return;
+  const fetchAllData = async () => {
+    if (!asset_tag) return;
 
-      setIsLoading(true);
-      try {
-        // 1. Fetch main asset record with supplier info
-        const { data: asset, error: assetError } = await supabase
-          .from('assets')
-          .select('*, suppliers(company_name)')
+    setIsLoading(true);
+    try {
+      // 1. Fetch main asset record with supplier info
+      const { data: asset, error: assetError } = await supabase
+        .from('assets')
+        .select('*, suppliers(company_name)')
+        .eq('asset_tag', asset_tag)
+        .single();
+
+      if (assetError) throw assetError;
+
+      // 2. Fetch Active Loan (Assignment Data)
+      const { data: activeLoan } = await supabase
+        .from('loans')
+        .select('employees(full_name, email, departments(name)), departments(name)')
+        .eq('asset_tag', asset_tag)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (asset) {
+        // Flatten/Format data for easier use in components
+        const formattedAsset = {
+          ...asset,
+          supplier_name: asset.suppliers?.company_name || 'N/A',
+          assigned_to_name: activeLoan?.employees?.full_name || (activeLoan?.departments?.name ? `Dept: ${activeLoan.departments.name}` : 'Unassigned'),
+          assigned_to_email: activeLoan?.employees?.email || 'N/A',
+          location_name: activeLoan?.employees?.departments?.name || activeLoan?.departments?.name || asset.location || 'N/A'
+        };
+        setAssetData(formattedAsset);
+
+        // 3. Fetch Activities for Audit Trail
+        const { data: activities, error: auditError } = await supabase
+          .from('activities')
+          .select('*')
           .eq('asset_tag', asset_tag)
-          .single();
+          .order('created_at', { ascending: false });
 
-        if (assetError) throw assetError;
-
-        // 2. Fetch Active Loan (Assignment Data)
-        const { data: activeLoan } = await supabase
-          .from('loans')
-          .select('employees(full_name, email, departments(name)), departments(name)')
-          .eq('asset_tag', asset_tag)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (asset) {
-          // Flatten/Format data for easier use in components
-          const formattedAsset = {
-            ...asset,
-            supplier_name: asset.suppliers?.company_name || 'N/A',
-            assigned_to_name: activeLoan?.employees?.full_name || (activeLoan?.departments?.name ? `Dept: ${activeLoan.departments.name}` : 'Unassigned'),
-            assigned_to_email: activeLoan?.employees?.email || 'N/A',
-            location_name: activeLoan?.employees?.departments?.name || activeLoan?.departments?.name || asset.location || 'N/A'
-          };
-          setAssetData(formattedAsset);
-
-          // 3. Fetch Activities for Audit Trail
-          const { data: activities, error: auditError } = await supabase
-            .from('activities')
-            .select('*, user:profiles(full_name, role)')
-            .eq('asset_tag', asset_tag)
-            .order('created_at', { ascending: false });
-
-          if (!auditError) {
-            const formattedAudit = activities.map(act => ({
-              id: act.id,
-              action: act.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-              timestamp: act.created_at,
-              user: act.user?.full_name || 'System',
-              userRole: act.user?.role || '',
-              description: act.description,
-              details: act.details
-            }));
-            setAuditData(formattedAudit);
-          }
-
-          // 3. Fetch Maintenance records
-          const { data: maintenance, error: maintError } = await supabase
-            .from('maintenance')
-            .select('*')
-            .eq('asset_tag', asset_tag)
-            .order('maintenance_date', { ascending: false });
-
-          if (!maintError) {
-            setMaintenanceData(maintenance);
-          } else {
-            console.error('Error fetching maintenance records:', maintError);
-          }
-
-          // 4. Attachments (Mocked or fetched from storage/assets table if applicable)
-          setAttachmentsData([]); 
-        } else {
-          addNotification('Asset not found', 'error');
+        if (!auditError) {
+          const formattedAudit = activities.map(act => ({
+            id: act.id,
+            action: act.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            timestamp: act.created_at,
+            user: 'System User', // Fallback as join is removed
+            userRole: '',
+            description: act.description,
+            details: act.details
+          }));
+          setAuditData(formattedAudit);
         }
-      } catch (error) {
-        console.error('Error fetching asset detail:', error);
-        addNotification(`Failed to load asset: ${error.message}`, 'error');
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
+        // 3. Fetch Maintenance records
+        const { data: maintenance, error: maintError } = await supabase
+          .from('maintenance')
+          .select('*')
+          .eq('asset_tag', asset_tag)
+          .order('maintenance_date', { ascending: false });
+
+        if (!maintError) {
+          setMaintenanceData(maintenance);
+        } else {
+          console.error('Error fetching maintenance records:', maintError);
+        }
+
+        // 4. Fetch Attachments from DB
+        const { data: attachments, error: attachError } = await supabase
+          .from('asset_attachments')
+          .select('*')
+          .eq('asset_tag', asset_tag)
+          .order('created_at', { ascending: false });
+
+        if (!attachError) {
+          setAttachmentsData(attachments);
+        } else {
+          console.error('Error fetching attachments:', attachError);
+        }
+      } else {
+        addNotification('Asset not found', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching asset detail:', error);
+      addNotification(`Failed to load asset: ${error.message}`, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAllData();
   }, [asset_tag]);
+
+  const handleMaintenanceSuccess = (message) => {
+    addNotification(message, 'success');
+    fetchAllData();
+  };
 
   const addNotification = (message, type = 'info') => {
     setNotifications(prev => [...prev, { id: Date.now(), message, type }]);
@@ -258,8 +273,20 @@ const AssetDetails = () => {
         {/* Tab Content Area */}
         <div className="p-6">
           {activeTab === 'details' && <DetailsTab asset={assetData} maintenanceHistory={maintenanceData} />}
-          {activeTab === 'maintenance' && <MaintenanceTab maintenanceHistory={maintenanceData} />}
-          {activeTab === 'attachments' && <AttachmentsTab attachments={attachmentsData} />}
+          {activeTab === 'maintenance' && (
+            <MaintenanceTab 
+              assetTag={asset_tag} 
+              maintenanceHistory={maintenanceData} 
+              onSuccess={handleMaintenanceSuccess} 
+            />
+          )}
+          {activeTab === 'attachments' && (
+            <AttachmentsTab 
+              assetTag={asset_tag}
+              attachments={attachmentsData} 
+              onSuccess={() => handleMaintenanceSuccess('Attachments updated successfully')}
+            />
+          )}
           {activeTab === 'audit' && <AuditTab auditTrail={auditData} />}
         </div>
       </div>
