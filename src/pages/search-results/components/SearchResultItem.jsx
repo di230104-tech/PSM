@@ -40,7 +40,9 @@ const SearchResultItem = ({ asset, searchQuery, onAddToFavorites }) => {
   };
 
   const handleViewDetails = () => {
-    if (asset.path) {
+    if (asset.type === 'asset' && (asset.asset_tag || asset.id)) {
+      navigate(`/assets/${asset.asset_tag || asset.id}`);
+    } else if (asset.path) {
       navigate(asset.path);
     }
   };

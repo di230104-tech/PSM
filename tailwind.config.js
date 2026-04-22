@@ -92,6 +92,15 @@ export default {
         'subtle': '0 1px 3px rgba(0, 0, 0, 0.1)',
         'modal': '0 4px 6px rgba(0, 0, 0, 0.1)',
       },
+      keyframes: {
+        scan: {
+          '0%, 100%': { top: '0%' },
+          '50%': { top: '100%' },
+        }
+      },
+      animation: {
+        scan: 'scan 2s linear infinite',
+      }
     },
   },
   plugins: [

@@ -17,3 +17,11 @@ export const formatAssetStatus = (status) => {
       return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
   }
 };
+
+export const formatCurrency = (amount) => {
+  if (amount === undefined || amount === null) return 'RM 0.00';
+  return new Intl.NumberFormat('en-MY', {
+    style: 'currency',
+    currency: 'MYR'
+  }).format(amount);
+};

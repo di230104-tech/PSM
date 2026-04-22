@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION global_search(search_term TEXT)
 RETURNS TABLE(
     id TEXT,
+    asset_tag TEXT,
     type TEXT,
     name TEXT,
     description TEXT,
@@ -23,10 +24,11 @@ BEGIN
     RETURN QUERY
     SELECT
         a.asset_tag as id,
+        a.asset_tag,
         'asset' as type,
         a.product_name as name,
         'Serial: ' || a.serial_number || ', Tag: ' || a.asset_tag as description,
-        '/asset-details/' || a.asset_tag as path,
+        '/assets/' || a.asset_tag as path,
         a.product_name,
         a.model,
         a.serial_number,
@@ -58,6 +60,7 @@ BEGIN
 
     SELECT
         e.id::text,
+        NULL,
         'employee' as type,
         e.full_name as name,
         'Email: ' || e.email || ', ID: ' || e.employee_id as description,
@@ -74,6 +77,7 @@ BEGIN
 
     SELECT
         d.id::text,
+        NULL,
         'department' as type,
         d.name as name,
         'Department' as description,
@@ -88,6 +92,7 @@ BEGIN
 
     SELECT
         s.id::text,
+        NULL,
         'supplier' as type,
         s.company_name as name,
         'Contact: ' || s.contact_person || ', Email: ' || s.email as description,

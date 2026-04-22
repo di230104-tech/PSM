@@ -192,6 +192,7 @@ const AssetRegistration = () => {
       supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
       image_url: formData.image_url,
       lifespan_years: formData.lifespan_years ? parseInt(formData.lifespan_years) : null,
+      lifespan_months: formData.lifespan_years ? parseInt(formData.lifespan_years) * 12 : null,
       user_id: userId,
     };
 
@@ -234,6 +235,7 @@ const AssetRegistration = () => {
       supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
       image_url: formData.image_url,
       lifespan_years: formData.lifespan_years ? parseInt(formData.lifespan_years) : null,
+      lifespan_months: formData.lifespan_years ? parseInt(formData.lifespan_years) * 12 : null,
       status: formData.status || 'in_storage',
     };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Panasonic } from '@thesvg/react';
 import Icon from '../AppIcon';
 import Button from './Button';
 
@@ -26,6 +27,13 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
       category: 'Asset Management and Workflow'
     },
     {
+      label: 'QR Scan',
+      path: '/scanner',
+      icon: 'QrCode',
+      roles: ['system_admin', 'it_staff'],
+      category: 'Asset Management and Workflow'
+    },
+    {
       label: 'Add Asset',
       path: '/asset-registration',
       icon: 'Plus',
@@ -44,6 +52,20 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
       label: 'Lifecycle Planning',
       path: '/lifecycle-planning',
       icon: 'TrendingUp',
+      roles: ['system_admin', 'it_staff'],
+      category: 'Asset Management and Workflow'
+    },
+    {
+      label: 'Write-Offs & Disposals',
+      path: '/write-offs',
+      icon: 'Trash2',
+      roles: ['system_admin', 'it_staff'],
+      category: 'Asset Management and Workflow'
+    },
+    {
+      label: 'Software Licenses',
+      path: '/software',
+      icon: 'Cloud',
       roles: ['system_admin', 'it_staff'],
       category: 'Asset Management and Workflow'
     },
@@ -148,14 +170,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
           {/* Logo Section */}
           <div className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} py-4 border-b border-border`}>
             {isCollapsed ? (
-              <div className="w-8 h-8 bg-primary text-primary-foreground rounded flex items-center justify-center font-bold text-sm">
-                P
-              </div>
+              <Panasonic className="h-6 w-6 text-primary" />
             ) : (
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary text-primary-foreground rounded flex items-center justify-center font-bold text-sm">
-                  P
-                </div>
+                <Panasonic className="h-8 w-auto text-primary" />
                 <div>
                   <div className="font-semibold text-sm text-foreground">Panasonic ISD</div>
                   <div className="text-xs text-muted-foreground">Asset Management</div>

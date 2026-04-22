@@ -26,7 +26,7 @@ BEGIN
         'asset' as type,
         a.product_name as name,
         'Serial: ' || a.serial_number || ', Tag: ' || a.asset_tag as description,
-        '/asset-details/' || a.id::text as path,
+        '/assets/' || a.id::text as path,
         a.product_name,
         a.model,
         a.serial_number,

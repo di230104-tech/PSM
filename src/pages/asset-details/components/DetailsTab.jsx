@@ -1,50 +1,70 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
+import { calculateEOLDate, getEOLStatus, calculateDepreciation } from '../../../utils/assetUtils';
+import { formatCurrency } from '../../../utils/formatters';
+import { 
+  calculateTotalMaintenanceCost, 
+  calculateTCO, 
+  getAssetHealthStatus, 
+  calculateMonthlyRunRate 
+} from '../../../utils/financialUtils';
 
-const DetailsTab = ({ asset }) => {
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    })?.format(amount);
-  };
-
+const DetailsTab = ({ asset, maintenanceHistory = [], tabId, ...props }) => {
   const formatDate = (dateString) => {
-    return new Date(dateString)?.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const calculateDepreciation = () => {
-    const purchaseDate = new Date(asset.purchaseDate);
-    const currentDate = new Date();
-    const yearsOwned = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
-    const annualDepreciation = asset?.purchasePrice * 0.2; // 20% per year
-    const totalDepreciation = Math.min(annualDepreciation * yearsOwned, asset?.purchasePrice * 0.8);
-    return asset?.purchasePrice - totalDepreciation;
+    if (!dateString) return 'N/A';
+    try {
+      // Handle YYYY-MM-DD to avoid timezone shift
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day)?.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return new Date(dateString)?.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
   };
 
   const getWarrantyStatus = () => {
-    const warrantyEnd = new Date(asset.warrantyExpiry);
+    if (!asset.purchase_date || !asset.warranty_months) {
+      return { status: 'No Warranty', color: 'text-muted-foreground', days: 0 };
+    }
+    
+    const purchaseDate = new Date(asset.purchase_date);
+    const warrantyEnd = new Date(purchaseDate);
+    warrantyEnd.setMonth(warrantyEnd.getMonth() + parseInt(asset.warranty_months));
+    
     const today = new Date();
     const daysRemaining = Math.ceil((warrantyEnd - today) / (1000 * 60 * 60 * 24));
     
     if (daysRemaining > 90) {
-      return { status: 'Active', color: 'text-success', days: daysRemaining };
+      return { status: 'Active', color: 'text-success', days: daysRemaining, expiryDate: warrantyEnd };
     } else if (daysRemaining > 0) {
-      return { status: 'Expiring Soon', color: 'text-warning', days: daysRemaining };
+      return { status: 'Expiring Soon', color: 'text-warning', days: daysRemaining, expiryDate: warrantyEnd };
     } else {
-      return { status: 'Expired', color: 'text-error', days: Math.abs(daysRemaining) };
+      return { status: 'Expired', color: 'text-error', days: Math.abs(daysRemaining), expiryDate: warrantyEnd };
     }
   };
 
   const warrantyInfo = getWarrantyStatus();
-  const currentValue = calculateDepreciation();
+  const currentValue = calculateDepreciation(asset.purchase_date, asset.purchase_price);
+  
+  // Financial Calculations
+  const totalMaintenanceCost = calculateTotalMaintenanceCost(maintenanceHistory);
+  const tco = calculateTCO(asset.purchase_price, totalMaintenanceCost);
+  const healthStatus = getAssetHealthStatus(asset.purchase_price, totalMaintenanceCost);
+  const monthlyRunRate = calculateMonthlyRunRate(tco, asset.purchase_date);
+
+  // Calculate EOL using the new utility
+  const eolDate = calculateEOLDate(asset.purchase_date, asset.lifespan_months || (asset.lifespan_years * 12));
+  const eolStatus = getEOLStatus(eolDate);
 
   return (
-    <div tabId="details">
+    <div {...props}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Basic Information */}
         <div className="space-y-6">
@@ -64,19 +84,19 @@ const DetailsTab = ({ asset }) => {
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Brand</span>
-                <span className="font-medium text-foreground">{asset?.brand}</span>
+                <span className="font-medium text-foreground">{asset?.brand || 'N/A'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Model</span>
-                <span className="font-medium text-foreground">{asset?.model}</span>
+                <span className="font-medium text-foreground">{asset?.model || 'N/A'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Serial Number</span>
-                <span className="font-medium text-foreground font-mono">{asset?.serialNumber}</span>
+                <span className="font-medium text-foreground font-mono">{asset?.serial_number}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Asset Tag</span>
-                <span className="font-medium text-foreground font-mono">{asset?.assetTag}</span>
+                <span className="font-medium text-foreground font-mono">{asset?.asset_tag}</span>
               </div>
             </div>
           </div>
@@ -90,20 +110,44 @@ const DetailsTab = ({ asset }) => {
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Current Location</span>
-                <span className="font-medium text-foreground">{asset?.location}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Department</span>
-                <span className="font-medium text-foreground">{asset?.department?.name}</span>
+                <span className="font-medium text-foreground">{asset?.location_name || asset?.location || 'N/A'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Assigned To</span>
-                <span className="font-medium text-foreground">{asset?.assignedTo || 'Unassigned'}</span>
+                <span className="font-medium text-foreground">{asset?.assigned_to_name || 'Unassigned'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Assignment Date</span>
                 <span className="font-medium text-foreground">
-                  {asset?.assignmentDate ? formatDate(asset?.assignmentDate) : 'N/A'}
+                  {asset?.assignment_date ? formatDate(asset?.assignment_date) : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Lifecycle Information */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+              <Icon name="RefreshCw" size={20} className="mr-2" />
+              Lifecycle Information
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">EOL Status</span>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${eolStatus.color}`}>
+                  {eolStatus.status}
+                </span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">Expected EOL Date</span>
+                <span className="font-medium text-foreground">
+                  {eolDate ? formatDate(eolDate.toISOString().split('T')[0]) : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">Lifespan</span>
+                <span className="font-medium text-foreground">
+                  {asset?.lifespan_months ? `${asset.lifespan_months} Months` : (asset?.lifespan_years ? `${asset.lifespan_years} Years` : 'N/A')}
                 </span>
               </div>
             </div>
@@ -113,30 +157,48 @@ const DetailsTab = ({ asset }) => {
         {/* Financial Information */}
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-              <Icon name="DollarSign" size={20} className="mr-2" />
-              Financial Information
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center">
+                <Icon name="DollarSign" size={20} className="mr-2" />
+                Financial Information
+              </h3>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${healthStatus.color}`}>
+                <Icon name={healthStatus.icon} size={14} />
+                {healthStatus.status}
+              </div>
+            </div>
+            
+            <div className="space-y-3 bg-muted/20 p-4 rounded-lg border border-border/50">
+              <div className="flex justify-between py-2 border-b border-border/50">
                 <span className="text-muted-foreground">Purchase Price</span>
-                <span className="font-medium text-foreground">{formatCurrency(asset?.purchasePrice)}</span>
+                <span className="font-medium text-foreground">{formatCurrency(asset?.purchase_price)}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Current Value</span>
-                <span className="font-medium text-foreground">{formatCurrency(currentValue)}</span>
+              <div className="flex justify-between py-2 border-b border-border/50">
+                <span className="text-muted-foreground">Maintenance Cost</span>
+                <span className="font-medium text-error">{formatCurrency(totalMaintenanceCost)}</span>
               </div>
+              <div className="flex justify-between py-2 border-b border-border/50">
+                <span className="text-muted-foreground font-bold text-foreground">Total Cost (TCO)</span>
+                <span className="font-bold text-foreground text-lg">{formatCurrency(tco)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border/50">
+                <span className="text-muted-foreground">Monthly Run Rate</span>
+                <span className="font-medium text-foreground">{formatCurrency(monthlyRunRate)} / month</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-muted-foreground font-medium">Estimated Current Value</span>
+                <span className="font-medium text-success">{formatCurrency(currentValue)}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3 px-1">
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Purchase Date</span>
-                <span className="font-medium text-foreground">{formatDate(asset?.purchaseDate)}</span>
+                <span className="font-medium text-foreground">{formatDate(asset?.purchase_date)}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Supplier</span>
-                <span className="font-medium text-foreground">{asset?.supplier?.name}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Purchase Order</span>
-                <span className="font-medium text-foreground font-mono">{asset?.purchaseOrder}</span>
+                <span className="font-medium text-foreground">{asset?.supplier_name || 'N/A'}</span>
               </div>
             </div>
           </div>
@@ -156,37 +218,19 @@ const DetailsTab = ({ asset }) => {
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Warranty Expiry</span>
-                <span className="font-medium text-foreground">{formatDate(asset?.warrantyExpiry)}</span>
+                <span className="font-medium text-foreground">
+                  {warrantyInfo?.expiryDate ? formatDate(warrantyInfo.expiryDate.toISOString().split('T')[0]) : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Days Remaining</span>
                 <span className={`font-medium ${warrantyInfo?.color}`}>
                   {warrantyInfo?.status === 'Expired' 
                     ? `Expired ${warrantyInfo?.days} days ago`
-                    : `${warrantyInfo?.days} days`
+                    : warrantyInfo?.status === 'No Warranty' ? 'N/A' : `${warrantyInfo?.days} days`
                   }
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Warranty Provider</span>
-                <span className="font-medium text-foreground">{asset?.warrantyProvider}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Technical Specifications */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-              <Icon name="Settings" size={20} className="mr-2" />
-              Technical Specifications
-            </h3>
-            <div className="space-y-3">
-              {asset?.specifications && Object.entries(asset?.specifications)?.map(([key, value]) => (
-                <div key={key} className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground capitalize">{key?.replace(/([A-Z])/g, ' $1')}</span>
-                  <span className="font-medium text-foreground">{value}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>

@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
 import { logoutUser } from '../../store/authSlice';
 import Icon from '../AppIcon';
 import Button from './Button';
@@ -11,92 +10,29 @@ import { NotificationContainer } from './NotificationToast';
 
 const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const searchRef = useRef(null);
-  const debounceTimeout = useRef(null);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef?.current && !searchRef?.current?.contains(event?.target)) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const addNotification = (message, type) => {
     setNotifications(prev => [...prev, { id: Date.now(), message, type }]);
   };
 
-  const fetchSuggestions = async (query) => {
-    if (query.length > 1) { // Fetch for 2 or more characters
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase.rpc('global_search', {
-          search_term: query
-        });
-        if (error) throw error;
-        setSuggestions(data || []);
-        setShowSuggestions(true);
-      } catch (error) {
-        console.error('Error fetching search suggestions:', error);
-        setSuggestions([]);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
   const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-
-    debounceTimeout.current = setTimeout(() => {
-      fetchSuggestions(query);
-    }, 300);
+    setSearchQuery(e.target.value);
   };
 
-  const handleSearchSubmit = (e) => {
-    e?.preventDefault();
-    if (searchQuery?.trim() && onSearch) {
-      onSearch(searchQuery);
-      setShowSuggestions(false);
-      setSearchQuery('');
-    }
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    if (suggestion.path) {
-      navigate(suggestion.path);
-    }
-    setShowSuggestions(false);
-    setSearchQuery('');
-  };
-
-  const getSuggestionIcon = (type) => {
-    switch (type) {
-      case 'asset': return 'Package';
-      case 'employee': return 'User';
-      case 'department': return 'Building';
-      case 'supplier': return 'Truck';
-      default: return 'Search';
+  const handleSearchSubmit = () => {
+    const query = searchQuery.trim();
+    if (query) {
+      setTimeout(() => {
+        navigate(`/assets/${query}`);
+        setSearchQuery('');
+      }, 0);
     }
   };
 
@@ -110,7 +46,7 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
       try {
         addNotification('You have been successfully logged out.', 'success');
         await dispatch(logoutUser()).unwrap();
-        setTimeout(() => navigate('/login'), 1500); 
+        setTimeout(() => navigate('/login'), 1500);
       } catch (error) {
         console.error("Logout failed:", error);
         addNotification('Logout failed. Please try again.', 'error');
@@ -137,7 +73,7 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
 
         {/* Search Bar */}
         <div ref={searchRef} className="flex-1 max-w-2xl mx-4">
-          <form onSubmit={handleSearchSubmit} className="relative">
+          <div className="relative">
             <div className={`relative transition-all duration-200 ${
               isSearchExpanded ? 'w-full' : 'w-full md:w-96'
             }`}>
@@ -148,19 +84,14 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
                 onChange={handleSearchChange}
                 onFocus={() => setIsSearchExpanded(true)}
                 onBlur={() => setIsSearchExpanded(false)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit(); }}
                 className="pl-10 pr-4 h-10 bg-muted/50 border-border focus:bg-background"
-              />
-              <Icon
+              />              <Icon
                 name="Search"
                 size={18}
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
               />
-              {isLoading && (
-                <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-muted border-t-primary"></div>
-                </div>
-              )}
-              {searchQuery && !isLoading && (
+              {searchQuery && (
                 <Button
                   type="button" // Important: type="button" to not submit form
                   variant="ghost"
@@ -171,31 +102,7 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
                 />
               )}
             </div>
-            {/* Search Suggestions Dropdown */}
-            {showSuggestions && suggestions?.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-lg shadow-modal z-200 max-h-80 overflow-y-auto">
-                <div className="p-2">
-                  <div className="text-xs font-medium text-muted-foreground px-3 py-2 border-b border-border">
-                    Search Results
-                  </div>
-                  {suggestions?.map((suggestion) => (
-                    <button
-                      key={suggestion?.id + suggestion.type}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full flex items-center space-x-3 px-3 py-3 text-left hover:bg-muted rounded-lg transition-colors"
-                    >
-                      <Icon name={getSuggestionIcon(suggestion.type)} size={16} className="text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{suggestion.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{suggestion.description}</p>
-                      </div>
-                      <Icon name="ArrowRight" size={14} className="text-muted-foreground flex-shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </form>
+          </div>
         </div>
 
         {/* Right Side Actions */}

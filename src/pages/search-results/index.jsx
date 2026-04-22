@@ -271,9 +271,9 @@ const SearchResults = () => {
                           : ''
                       }`}
                     >
-                      {sortedResults?.map((asset) => (
+                      {sortedResults?.map((asset, index) => (
                         <SearchResultItem
-                          key={asset?.id}
+                          key={asset?.result_id || index}
                           asset={asset}
                           searchQuery={searchQuery}
                           onAddToFavorites={handleAddToFavorites}

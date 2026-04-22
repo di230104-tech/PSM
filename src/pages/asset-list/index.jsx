@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabaseClient';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import { DashboardSkeleton } from '../../components/ui/LoadingState';
-import AssetDetailPanel from './components/AssetDetailPanel';
+import AssetQuickViewPanel from './components/AssetQuickViewPanel';
 import { NotificationContainer } from '../../components/ui/NotificationToast';
 import { formatAssetStatus } from '../../utils/formatters';
 import { useSelector } from 'react-redux'; // Import useSelector
@@ -156,7 +156,12 @@ const AssetList = () => {
             try {
                 let query = supabase
                     .from('assets')
-                    .select(`*, departments ( name ), suppliers ( company_name )`); // Ensure suppliers is selected
+                    .select(`
+                        *, 
+                        departments ( name ), 
+                        suppliers ( company_name ),
+                        maintenance ( cost )
+                    `);
 
                 // Apply filters
                 if (filters.searchQuery) {
@@ -208,6 +213,55 @@ const AssetList = () => {
         fetchAssets();
     }, [sortConfig, location.state, filters]);
     
+    const handleExportCSV = () => {
+        if (assets.length === 0) {
+            addNotification('No data to export.', 'warning');
+            return;
+        }
+
+        const headers = [
+            'Asset Tag',
+            'Model/Name',
+            'Category',
+            'Status',
+            'Location',
+            'Department',
+            'Supplier',
+            'Purchase Date',
+            'Purchase Price',
+            'Serial Number'
+        ];
+
+        const csvRows = assets.map(asset => {
+            return [
+                `"${asset.asset_tag || ''}"`,
+                `"${asset.product_name || ''}"`,
+                `"${asset.category || ''}"`,
+                `"${asset.status || ''}"`,
+                `"${asset.location || ''}"`,
+                `"${asset.departments?.name || ''}"`,
+                `"${asset.suppliers?.company_name || ''}"`,
+                `"${asset.purchase_date || ''}"`,
+                `"${asset.purchase_price || 0}"`,
+                `"${asset.serial_number || ''}"`
+            ].join(',');
+        });
+
+        const csvContent = [headers.join(','), ...csvRows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `panasonic_assets_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        addNotification('Export downloaded successfully', 'success');
+    };
+
     const handleDeleteAsset = (asset) => {
         if (enrolledFactors.length > 0) {
             setAssetToDelete(asset);
@@ -273,7 +327,7 @@ const AssetList = () => {
                     totalCount={assets.length}
                     departments={departments}
                     suppliers={suppliers}
-                    onExport={() => addNotification('Export functionality not yet implemented.', 'info')} // Placeholder
+                    onExport={handleExportCSV}
                 />
 
                 <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
@@ -303,14 +357,11 @@ const AssetList = () => {
             </div>
             
             <AnimatePresence>
-                {selectedAsset && (
-                    <AssetDetailPanel 
-                        asset={selectedAsset} 
-                        onClose={closePanel} 
-                        onEdit={() => { navigate(`/asset-registration?tag=${selectedAsset.asset_tag}`); closePanel(); }} 
-                        onAssetUpdate={handleAssetUpdate} 
-                    />
-                )}
+                <AssetQuickViewPanel 
+                    isOpen={!!selectedAsset} 
+                    onClose={closePanel} 
+                    asset={selectedAsset} 
+                />
             </AnimatePresence>
 
             <AnimatePresence>
