@@ -48,16 +48,28 @@ const ScannerPage = () => {
     };
   }, []);
 
+  const hasScanned = useRef(false);
+
   const onScanSuccess = (decodedText, decodedResult) => {
-    // If it looks like an ISD asset tag (e.g., ISD-LAP-1042)
-    if (decodedText && decodedText.startsWith('ISD-')) {
+    if (hasScanned.current) return;
+
+    if (decodedText) {
+      hasScanned.current = true;
+      const assetTag = decodedText.trim().toUpperCase();
+      
+      console.log(`Scanned asset tag: ${assetTag}`);
+
       if (html5QrCodeRef.current) {
+        // Try to stop the scanner before navigating
         html5QrCodeRef.current.stop().then(() => {
-          navigate(`/assets/${decodedText}`);
+          navigate(`/assets/${assetTag}`);
         }).catch(err => {
+          // If stopping fails, we still want to navigate
           console.error("Error stopping after success:", err);
-          navigate(`/assets/${decodedText}`);
+          navigate(`/assets/${assetTag}`);
         });
+      } else {
+        navigate(`/assets/${assetTag}`);
       }
     }
   };
