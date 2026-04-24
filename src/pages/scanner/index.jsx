@@ -55,21 +55,31 @@ const ScannerPage = () => {
 
     if (decodedText) {
       hasScanned.current = true;
-      const assetTag = decodedText.trim().toUpperCase();
       
-      console.log(`Scanned asset tag: ${assetTag}`);
+      let assetId = decodedText.trim();
+      
+      // If the QR is a full URL like "http://localhost:5173/assets/ISD-SOF-8350"
+      if (assetId.includes('/assets/')) {
+          const parts = assetId.split('/assets/');
+          assetId = parts[parts.length - 1].replace(/\//g, ''); // Get the last part and remove any trailing slashes
+      }
+      
+      // Force uppercase if your database strictly uses uppercase tags
+      assetId = assetId.toUpperCase(); 
+      
+      console.log("Attempting to route to:", '/assets/' + assetId);
 
       if (html5QrCodeRef.current) {
         // Try to stop the scanner before navigating
         html5QrCodeRef.current.stop().then(() => {
-          navigate(`/assets/${assetTag}`);
+          navigate(`/assets/${assetId}`);
         }).catch(err => {
           // If stopping fails, we still want to navigate
           console.error("Error stopping after success:", err);
-          navigate(`/assets/${assetTag}`);
+          navigate(`/assets/${assetId}`);
         });
       } else {
-        navigate(`/assets/${assetTag}`);
+        navigate(`/assets/${assetId}`);
       }
     }
   };
@@ -82,7 +92,17 @@ const ScannerPage = () => {
   const handleManualSearch = (e) => {
     e.preventDefault();
     if (manualTag.trim()) {
-      navigate(`/assets/${manualTag.trim().toUpperCase()}`);
+      let assetId = manualTag.trim();
+      
+      // Handle cases where a URL is pasted
+      if (assetId.includes('/assets/')) {
+        const parts = assetId.split('/assets/');
+        assetId = parts[parts.length - 1].replace(/\//g, '');
+      }
+      
+      assetId = assetId.toUpperCase();
+      console.log("Manual search attempting to route to:", '/assets/' + assetId);
+      navigate(`/assets/${assetId}`);
     }
   };
 
