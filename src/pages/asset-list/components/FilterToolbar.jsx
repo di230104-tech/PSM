@@ -6,7 +6,7 @@ import Icon from '../../../components/AppIcon';
 import { formatAssetStatus } from '../../../utils/formatters';
 
 
-const FilterToolbar = ({ 
+export function FilterToolbar({ 
   filters: propFilters, // Use propFilters to avoid state conflict
   onFilterChange, 
   onBulkAction, 
@@ -14,8 +14,9 @@ const FilterToolbar = ({
   totalCount = 0,
   onExport,
   departments = [], // New prop
-  suppliers = []    // New prop
-}) => {
+  suppliers = [],    // New prop
+  locations = []     // New prop
+}) {
   // Use local state for internal management of filters if propFilters is not immediately available,
   // but prioritize propFilters for controlled component behavior.
   const [localFilters, setLocalFilters] = useState(propFilters || {
@@ -58,13 +59,7 @@ const FilterToolbar = ({
 
   const locationOptions = [
     { value: '', label: 'All Locations' },
-    { value: 'hq_floor_1', label: 'HQ - Floor 1' },
-    { value: 'hq_floor_2', label: 'HQ - Floor 2' },
-    { value: 'hq_floor_3', label: 'HQ - Floor 3' },
-    { value: 'warehouse', label: 'Warehouse' },
-    { value: 'branch_tokyo', label: 'Tokyo Branch' },
-    { value: 'branch_osaka', label: 'Osaka Branch' },
-    { value: 'remote', label: 'Remote/Home Office' }
+    ...locations
   ];
 
   const bulkActionOptions = [
@@ -245,6 +240,6 @@ const FilterToolbar = ({
       </div>
     </div>
   );
-};
+}
 
 export default FilterToolbar;

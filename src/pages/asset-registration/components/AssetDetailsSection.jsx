@@ -2,7 +2,7 @@ import React from 'react';
 import { Controller } from 'react-hook-form';
 import Icon from '../../../components/AppIcon';
 
-const AssetDetailsSection = ({ register, errors, control }) => {
+const AssetDetailsSection = ({ register, errors, control, locations = [] }) => {
   // Helper class to mimic your UI's input style
   const inputClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -52,6 +52,29 @@ const AssetDetailsSection = ({ register, errors, control }) => {
                 className={inputClass}
             />
             {errors.serial_number && <p className="text-sm text-red-500">{errors.serial_number.message}</p>}
+        </div>
+
+        {/* Location Dropdown */}
+        <div className="space-y-2">
+            <label className="text-sm font-medium leading-none">Location</label>
+            <Controller
+              name="location_id"
+              control={control}
+              render={({ field }) => (
+                <select 
+                  {...field}
+                  className={inputClass}
+                >
+                    <option value="">Unassigned / Select Location</option>
+                    {locations.map(loc => (
+                        <option key={loc.value} value={loc.value}>{loc.label}</option>
+                    ))}
+                </select>
+              )}
+            />
+            {errors.location_id && (
+              <p className="text-sm text-red-500 font-medium">{errors.location_id.message}</p>
+            )}
         </div>
       </div>
     </div>

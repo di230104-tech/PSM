@@ -96,6 +96,13 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
       icon: 'Building2',
       roles: ['system_admin', 'manager'],
       category: 'Organization'
+    },
+    {
+      label: 'Location Management',
+      path: '/admin/location-management',
+      icon: 'MapPin',
+      roles: ['system_admin', 'manager'],
+      category: 'Organization'
     }
   ];
 

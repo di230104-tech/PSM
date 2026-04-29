@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
+import { Cpu, HardDrive, Database, Monitor, Globe, Network, Settings } from 'lucide-react';
 import { calculateEOLDate, getEOLStatus, calculateDepreciation } from '../../../utils/assetUtils';
 import { formatCurrency } from '../../../utils/formatters';
 import { 
@@ -110,7 +111,7 @@ const DetailsTab = ({ asset, maintenanceHistory = [], tabId, ...props }) => {
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Current Location</span>
-                <span className="font-medium text-foreground">{asset?.location_name || asset?.location || 'N/A'}</span>
+                <span className="font-medium text-foreground">{asset?.location_name || 'Unassigned'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Assigned To</span>
@@ -234,6 +235,106 @@ const DetailsTab = ({ asset, maintenanceHistory = [], tabId, ...props }) => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Technical Specifications */}
+      <div className="mt-12">
+        <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center">
+          <Settings size={20} className="mr-2 text-primary" />
+          Technical Specifications
+        </h3>
+        
+        {asset?.technical_specs && Object.values(asset.technical_specs).some(v => v) ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {asset.technical_specs.processor && (
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <Cpu size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Processor</p>
+                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.processor}</p>
+                </div>
+              </div>
+            )}
+            
+            {asset.technical_specs.memory && (
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <Database size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Memory (RAM)</p>
+                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.memory}</p>
+                </div>
+              </div>
+            )}
+
+            {asset.technical_specs.storage && (
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <HardDrive size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Storage</p>
+                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.storage}</p>
+                </div>
+              </div>
+            )}
+
+            {asset.technical_specs.graphics && (
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <Monitor size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Graphics</p>
+                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.graphics}</p>
+                </div>
+              </div>
+            )}
+
+            {asset.technical_specs.os && (
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <Globe size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">OS</p>
+                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.os}</p>
+                </div>
+              </div>
+            )}
+
+            {asset.technical_specs.network_card && (
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <Network size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Network</p>
+                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.network_card}</p>
+                </div>
+              </div>
+            )}
+
+            {asset.technical_specs.ports && (
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4 md:col-span-2 lg:col-span-2">
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <Icon name="Settings" size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Ports</p>
+                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.ports}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-8 border border-dashed border-border rounded-xl text-center">
+            <p className="text-muted-foreground italic">No technical specifications recorded for this asset.</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import SupplierManagement from './pages/supplier-management';
 import UserRegistration from 'pages/admin/UserRegistration';
 import EmployeeManagement from 'pages/admin/EmployeeManagement';
 import DepartmentManagement from 'pages/admin/DepartmentManagement';
+import LocationsPage from 'pages/admin/LocationManagement'; // Renamed to LocationsPage as per requirement
 import AllActivities from 'pages/AllActivities'; // Import AllActivities
 import BulkImportTemplate from 'pages/BulkImportTemplate'; // Import BulkImportTemplate
 import MfaSetup from 'pages/MfaSetup';
@@ -86,6 +87,14 @@ const Routes = () => {
               element={
                 <ProtectedRoute allowedRoles={['system_admin', 'manager']}>
                   <DepartmentManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/location-management" 
+              element={
+                <ProtectedRoute allowedRoles={['system_admin', 'manager']}>
+                  <LocationsPage />
                 </ProtectedRoute>
               } 
             />

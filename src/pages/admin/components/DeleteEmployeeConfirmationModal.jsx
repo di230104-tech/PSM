@@ -48,7 +48,7 @@ const DeleteEmployeeConfirmationModal = ({ employee, onClose, onConfirmDelete })
         <div className="p-6 space-y-4">
           <p className="text-destructive flex items-center gap-2">
             <AlertCircle size={20} />
-            This action cannot be undone. All data associated with this employee will be permanently removed.
+            This action cannot be undone. However, associated historical data (such as past asset loans) will be preserved and marked as unassigned.
           </p>
           {error && (
             <div className="bg-red-100 text-red-700 p-3 rounded-lg flex items-center gap-2">

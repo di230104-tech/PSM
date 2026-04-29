@@ -26,7 +26,7 @@ const AssetSelectionModal = ({ assets, onAssetSelect, onClose }) => {
     }
 
     if (selectedLocation) {
-      filtered = filtered?.filter(asset => asset?.location === selectedLocation);
+      filtered = filtered?.filter(asset => (asset?.locations?.name || asset?.location) === selectedLocation);
     }
 
     return filtered;
@@ -34,7 +34,7 @@ const AssetSelectionModal = ({ assets, onAssetSelect, onClose }) => {
 
   // Get unique categories and locations
   const categories = [...new Set(assets?.map(asset => asset?.category).filter(Boolean))]?.sort();
-  const locations = [...new Set(assets?.map(asset => asset?.location).filter(Boolean))]?.sort();
+  const locations = [...new Set(assets?.map(asset => asset?.locations?.name || asset?.location).filter(Boolean))]?.sort();
 
   const getConditionColor = (condition) => {
     switch (condition?.toLowerCase()) {

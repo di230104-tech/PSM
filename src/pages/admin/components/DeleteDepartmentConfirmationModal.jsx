@@ -48,7 +48,7 @@ const DeleteDepartmentConfirmationModal = ({ department, onClose, onConfirmDelet
         <div className="p-6 space-y-4">
           <p className="text-destructive flex items-center gap-2">
             <AlertCircle size={20} />
-            This action cannot be undone. All data associated with this department will be permanently removed.
+            This action cannot be undone. Any employees currently assigned to this department will be preserved but moved to an unassigned status.
           </p>
           {error && (
             <div className="bg-red-100 text-red-700 p-3 rounded-lg flex items-center gap-2">

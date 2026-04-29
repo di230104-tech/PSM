@@ -1,0 +1,107 @@
+CREATE OR REPLACE FUNCTION global_search(search_term TEXT)
+RETURNS TABLE(
+    id TEXT,
+    asset_tag TEXT,
+    type TEXT,
+    name TEXT,
+    description TEXT,
+    path TEXT,
+    -- Add asset-specific fields, nullable
+    product_name TEXT,
+    model TEXT,
+    serial_number TEXT,
+    category TEXT,
+    status TEXT,
+    location TEXT,
+    assigned_to TEXT,
+    date_added TIMESTAMPTZ,
+    relevance_score INT,
+    is_favorite BOOLEAN,
+    image TEXT,
+    image_alt TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        a.asset_tag as id,
+        a.asset_tag,
+        'asset' as type,
+        a.product_name as name,
+        'Serial: ' || a.serial_number || ', Tag: ' || a.asset_tag as description,
+        '/assets/' || a.asset_tag as path,
+        a.product_name,
+        a.model,
+        a.serial_number,
+        a.category,
+        a.status,
+        (SELECT l.name FROM public.locations l WHERE l.id = a.location_id) as location,
+        (
+          SELECT COALESCE(e.full_name, d.name)
+          FROM public.loans l
+          LEFT JOIN public.employees e ON e.id = l.employee_id
+          LEFT JOIN public.departments d ON d.id = l.department_id
+          WHERE l.asset_tag = a.asset_tag AND l.status = 'active'
+          LIMIT 1
+        ) as assigned_to,
+        a.created_at as date_added,
+        100 as relevance_score, -- Placeholder
+        false as is_favorite,   -- Placeholder
+        a.image_url as image,
+        a.product_name as image_alt
+    FROM
+        public.assets a
+    WHERE
+        a.product_name ILIKE '%' || search_term || '%' OR
+        a.asset_tag ILIKE '%' || search_term || '%' OR
+        a.serial_number ILIKE '%' || search_term || '%' OR
+        a.model ILIKE '%' || search_term || '%'
+
+    UNION ALL
+
+    SELECT
+        e.id::text,
+        NULL,
+        'employee' as type,
+        e.full_name as name,
+        'Email: ' || e.email || ', ID: ' || e.employee_id as description,
+        '/admin/employee-management' as path,
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 50, false, NULL, NULL
+    FROM
+        public.employees e
+    WHERE
+        e.full_name ILIKE '%' || search_term || '%' OR
+        e.email ILIKE '%' || search_term || '%' OR
+        e.employee_id ILIKE '%' || search_term || '%'
+
+    UNION ALL
+
+    SELECT
+        d.id::text,
+        NULL,
+        'department' as type,
+        d.name as name,
+        'Department' as description,
+        '/admin/department-management' as path,
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 40, false, NULL, NULL
+    FROM
+        public.departments d
+    WHERE
+        d.name ILIKE '%' || search_term || '%'
+
+    UNION ALL
+
+    SELECT
+        s.id::text,
+        NULL,
+        'supplier' as type,
+        s.company_name as name,
+        'Contact: ' || s.contact_person || ', Email: ' || s.email as description,
+        '/supplier-management' as path,
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 30, false, NULL, NULL
+    FROM
+        public.suppliers s
+    WHERE
+        s.company_name ILIKE '%' || search_term || '%' OR
+        s.contact_person ILIKE '%' || search_term || '%';
+END;
+$$ LANGUAGE plpgsql;

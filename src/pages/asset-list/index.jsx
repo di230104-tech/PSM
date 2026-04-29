@@ -11,7 +11,7 @@ import { NotificationContainer } from '../../components/ui/NotificationToast';
 import { formatAssetStatus } from '../../utils/formatters';
 import { useSelector } from 'react-redux'; // Import useSelector
 import { logActivity } from '../../utils/activityLogger'; // Import logActivity
-import FilterToolbar from './components/FilterToolbar'; // Import FilterToolbar
+import { FilterToolbar } from './components/FilterToolbar'; // Import FilterToolbar
 import AssetTable from './components/AssetTable'; // Import AssetTable
 import MfaChallengeModal from '../../components/ui/MfaChallengeModal'; // Import MfaChallengeModal
 
@@ -97,6 +97,7 @@ const AssetList = () => {
     // Data for filters
     const [departments, setDepartments] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [locations, setLocations] = useState([]);
 
     const addNotification = (message, type) => {
         setNotifications(prev => [...prev, { id: Date.now(), message, type }]);
@@ -128,6 +129,10 @@ const AssetList = () => {
                 const { data: suppliersData, error: suppliersError } = await supabase.from('suppliers').select('id, company_name');
                 if (suppliersError) throw suppliersError;
                 setSuppliers(suppliersData.map(sup => ({ value: sup.id, label: sup.company_name })));
+
+                const { data: locationsData, error: locationsError } = await supabase.from('locations').select('id, name');
+                if (locationsError) throw locationsError;
+                setLocations(locationsData.map(loc => ({ value: loc.id, label: loc.name })));
             } catch (error) {
                 addNotification(`Error fetching filter options: ${error.message}`, 'error');
             }
@@ -148,9 +153,12 @@ const AssetList = () => {
     useEffect(() => {
         if (location.state?.message) {
             addNotification(location.state.message, 'success');
+            // Clear the message from history state so it doesn't show again on re-render
             window.history.replaceState({}, '');
         }
+    }, [location.state]);
 
+    useEffect(() => {
         const fetchAssets = async () => {
             setIsLoading(true);
             try {
@@ -160,7 +168,13 @@ const AssetList = () => {
                         *, 
                         departments ( name ), 
                         suppliers ( company_name ),
-                        maintenance ( cost )
+                        locations ( name ),
+                        maintenance ( cost ),
+                        loans (
+                            status,
+                            employees ( id, full_name, email, departments ( name ) ),
+                            departments ( id, name )
+                        )
                     `);
 
                 // Apply filters
@@ -180,7 +194,7 @@ const AssetList = () => {
                     query = query.eq('supplier_id', filters.supplier);
                 }
                 if (filters.location) {
-                    query = query.eq('location', filters.location);
+                    query = query.eq('location_id', filters.location);
                 }
                 if (filters.dateRange.start) {
                     query = query.gte('purchase_date', filters.dateRange.start);
@@ -211,7 +225,7 @@ const AssetList = () => {
             }
         };
         fetchAssets();
-    }, [sortConfig, location.state, filters]);
+    }, [sortConfig, filters]);
     
     const handleExportCSV = () => {
         if (assets.length === 0) {
@@ -238,7 +252,7 @@ const AssetList = () => {
                 `"${asset.product_name || ''}"`,
                 `"${asset.category || ''}"`,
                 `"${asset.status || ''}"`,
-                `"${asset.location || ''}"`,
+                `"${asset.locations?.name || ''}"`,
                 `"${asset.departments?.name || ''}"`,
                 `"${asset.suppliers?.company_name || ''}"`,
                 `"${asset.purchase_date || ''}"`,
@@ -327,6 +341,7 @@ const AssetList = () => {
                     totalCount={assets.length}
                     departments={departments}
                     suppliers={suppliers}
+                    locations={locations}
                     onExport={handleExportCSV}
                 />
 

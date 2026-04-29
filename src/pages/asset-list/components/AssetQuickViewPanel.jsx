@@ -1,13 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Settings, Clock, ExternalLink, Pencil, Printer, Package } from 'lucide-react';
+import { X, User, Settings, Clock, ExternalLink, Pencil, Printer, Package, Cpu, Database, HardDrive } from 'lucide-react';
+import QRCode from 'react-qr-code';
+import { supabase } from '../../../lib/supabaseClient';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import AppImage from '../../../components/AppImage';
 
 const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
   const navigate = useNavigate();
+  const [activities, setActivities] = useState([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!asset?.asset_tag || !isOpen) return;
+
+      setIsLoadingActivities(true);
+      try {
+        const { data, error } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('asset_tag', asset.asset_tag)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+        setActivities(data || []);
+      } catch (err) {
+        console.error('Error fetching asset activities:', err);
+      } finally {
+        setIsLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, [asset?.asset_tag, isOpen]);
 
   if (!isOpen) return null;
 
@@ -23,6 +52,41 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
       navigate(`/asset-registration?tag=${asset.asset_tag}`);
       onClose();
     }
+  };
+
+  const handlePrintQR = () => {
+    const qrElement = document.getElementById('qr-print-container');
+    if (!qrElement) return;
+
+    const printWindow = window.open('', '_blank', 'width=400,height=400');
+    const assetName = asset?.asset_tag || asset?.product_name || 'Asset';
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print QR - ${assetName}</title>
+                <style>
+                    body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
+                    .qr-wrapper { text-align: center; }
+                    p { font-weight: bold; margin-top: 15px; font-size: 18px; }
+                </style>
+            </head>
+            <body>
+                <div class="qr-wrapper">
+                    ${qrElement.innerHTML}
+                    <p>${assetName}</p>
+                </div>
+            </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    // Slight delay to ensure SVG/Canvas renders before printing
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
   };
 
   const getStatusBadgeClass = (status) => {
@@ -54,6 +118,17 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
     });
   };
 
@@ -136,7 +211,7 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                 {[
                   { label: 'Category', value: asset?.category || '-' },
                   { label: 'Serial Number', value: asset?.serial_number || '-' },
-                  { label: 'Location', value: asset?.location || '-' },
+                  { label: 'Location', value: asset?.locations?.name || '-' },
                   { label: 'Purchase Date', value: formatDate(asset?.purchase_date) },
                   { label: 'Purchase Cost', value: formatCurrency(asset?.purchase_price) },
                   { label: 'Warranty', value: asset?.warranty_months ? `${asset.warranty_months} Months` : '-' },
@@ -154,45 +229,73 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                   <User size={18} className="text-primary" />
                   Current Assignment
                 </h4>
-                {asset?.employees ? (
-                  <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-foreground">{asset.employees.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{asset.departments?.name || 'No Department'}</p>
+                {(() => {
+                  const activeLoan = asset?.loans?.find(l => l.status === 'active');
+                  const assigneeName = activeLoan?.employees?.full_name || (activeLoan?.departments?.name ? `Dept: ${activeLoan.departments.name}` : null);
+                  
+                  if (assigneeName) {
+                    return (
+                      <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-foreground">{assigneeName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {activeLoan.employees?.departments?.name || activeLoan.departments?.name || 'No Department'}
+                          </p>
+                        </div>
+                        <div className="pt-2 border-t border-border/50 space-y-1">
+                          {activeLoan.employees?.email && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-2">
+                              <span className="font-medium">Email:</span> {activeLoan.employees.email}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium">Assigned:</span> {formatDate(asset.last_assignment_date || asset.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="bg-muted/30 rounded-lg p-4 border border-dashed border-border text-center">
+                      <p className="text-sm text-muted-foreground">Unassigned</p>
                     </div>
-                    <div className="pt-2 border-t border-border/50 space-y-1">
-                      <p className="text-xs text-muted-foreground flex items-center gap-2">
-                        <span className="font-medium">Email:</span> {asset.employees.email}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        <span className="font-medium">Assigned:</span> {formatDate(asset.last_assignment_date || asset.created_at)}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-muted/30 rounded-lg p-4 border border-dashed border-border text-center">
-                    <p className="text-sm text-muted-foreground">Unassigned</p>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
-              {/* Specifications Section */}
+              {/* Quick Specs Section */}
               <div className="pt-2">
                 <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
                   <Settings size={18} className="text-primary" />
-                  Specifications
+                  Quick Specs
                 </h4>
-                {asset?.specifications && Object.keys(asset.specifications).length > 0 ? (
-                  <div className="space-y-2">
-                    {Object.entries(asset.specifications).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
-                        <span className="text-sm text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
-                        <span className="text-sm font-medium text-foreground">{value}</span>
-                      </div>
-                    ))}
+                {asset?.technical_specs && (asset.technical_specs.processor || asset.technical_specs.memory || asset.technical_specs.storage) ? (
+                  <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                    <p className="text-sm text-foreground flex flex-wrap gap-x-2 gap-y-1">
+                      {asset.technical_specs.processor && (
+                        <span className="flex items-center gap-1">
+                          <Cpu size={14} className="text-muted-foreground" />
+                          {asset.technical_specs.processor}
+                        </span>
+                      )}
+                      {(asset.technical_specs.processor && (asset.technical_specs.memory || asset.technical_specs.storage)) && <span className="text-border">•</span>}
+                      {asset.technical_specs.memory && (
+                        <span className="flex items-center gap-1">
+                          <Database size={14} className="text-muted-foreground" />
+                          {asset.technical_specs.memory}
+                        </span>
+                      )}
+                      {(asset.technical_specs.memory && asset.technical_specs.storage) && <span className="text-border">•</span>}
+                      {asset.technical_specs.storage && (
+                        <span className="flex items-center gap-1">
+                          <HardDrive size={14} className="text-muted-foreground" />
+                          {asset.technical_specs.storage}
+                        </span>
+                      )}
+                    </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No specifications provided.</p>
+                  <p className="text-sm text-muted-foreground italic">No quick specs available.</p>
                 )}
               </div>
 
@@ -202,14 +305,23 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                   <Clock size={18} className="text-primary" />
                   Recent Activity
                 </h4>
-                {asset?.recent_activity && asset.recent_activity.length > 0 ? (
+                {isLoadingActivities ? (
+                  <div className="flex justify-center p-4">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                  </div>
+                ) : activities.length > 0 ? (
                   <div className="relative pl-4 space-y-6 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
-                    {asset.recent_activity.slice(0, 3).map((activity, idx) => (
-                      <div key={idx} className="relative">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="relative">
                         <div className="absolute -left-[13px] top-1.5 w-3 h-3 rounded-full bg-primary border-2 border-card" />
-                        <p className="text-sm text-foreground leading-tight">{activity.action}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(activity.date)} • {activity.user || 'System'}
+                        <p className="text-sm text-foreground leading-tight font-bold">
+                          {activity.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {activity.description}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">
+                          {formatDateTime(activity.created_at)}
                         </p>
                       </div>
                     ))}
@@ -233,7 +345,7 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => console.log('Print QR', asset?.asset_tag)}
+                  onClick={handlePrintQR}
                   className="w-full flex items-center justify-center gap-2"
                 >
                   <Printer size={16} />
@@ -247,6 +359,17 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                 View Full Details
                 <ExternalLink size={16} />
               </Button>
+            </div>
+
+            {/* Hidden QR Code for Printing */}
+            <div id="qr-print-container" style={{ display: 'none' }}>
+              {asset?.asset_tag && (
+                <QRCode 
+                  value={asset.asset_tag} 
+                  size={256}
+                  level="H"
+                />
+              )}
             </div>
           </motion.div>
         </>

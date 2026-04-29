@@ -11,7 +11,8 @@ const BulkActionModal = ({
   onClose, 
   selectedAssets = [], 
   actionType, 
-  onConfirm 
+  onConfirm,
+  locations = [] // Add locations prop
 }) => {
   const [formData, setFormData] = useState({
     newStatus: '',
@@ -30,15 +31,10 @@ const BulkActionModal = ({
     { value: 'lost', label: formatAssetStatus('lost') }
   ];
 
-  const locationOptions = [
-    { value: 'hq_floor_1', label: 'HQ - Floor 1' },
-    { value: 'hq_floor_2', label: 'HQ - Floor 2' },
-    { value: 'hq_floor_3', label: 'HQ - Floor 3' },
-    { value: 'warehouse', label: 'Warehouse' },
-    { value: 'branch_tokyo', label: 'Tokyo Branch' },
-    { value: 'branch_osaka', label: 'Osaka Branch' },
-    { value: 'remote', label: 'Remote/Home Office' }
-  ];
+  const locationOptions = locations.map(loc => ({
+    value: loc.id || loc.value,
+    label: loc.name || loc.label
+  }));
 
   const userOptions = [
     { value: 'john.doe', label: 'John Doe - IT Department' },

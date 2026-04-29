@@ -5,7 +5,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import { LoadingSpinner } from '../../../components/ui/LoadingState';
 import { useSelector } from 'react-redux';
 
-const AttachmentsTab = ({ assetTag, attachments, onSuccess }) => {
+const AttachmentsTab = ({ assetTag, attachments, onSuccess, tabId }) => {
   const [dragOver, setDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [documentType, setDocumentType] = useState('Invoice');

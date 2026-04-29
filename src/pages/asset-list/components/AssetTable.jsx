@@ -63,6 +63,12 @@ const AssetTable = ({
                         </th>
                         <th className="px-6 py-4 font-medium text-center">Health</th>
                         <th className="px-6 py-4 font-medium text-center">EOL Status</th>
+                        <th className="px-6 py-4 font-medium">
+                            <button onClick={() => onSort('locations.name')} className="flex items-center gap-2">
+                                Location
+                                <Icon name={getSortIcon('locations.name')} size={14} />
+                            </button>
+                        </th>
                         <th className="px-6 py-4 font-medium text-right">Price</th>
                         <th className="px-6 py-4 font-medium text-center">Actions</th>
                     </tr>
@@ -74,6 +80,14 @@ const AssetTable = ({
                         
                         const totalMaint = calculateTotalMaintenanceCost(asset.maintenance);
                         const health = getAssetHealthStatus(asset.purchase_price, totalMaint);
+                        
+                        // Fallback logic for Department: Direct Assignment > Employee's Department > N/A
+                        const activeLoan = asset.loans?.find(l => l.status === 'active');
+                        const departmentName = 
+                            asset.departments?.name || 
+                            activeLoan?.employees?.departments?.name || 
+                            activeLoan?.departments?.name ||
+                            'N/A';
                         
                         return (
                             <tr 
@@ -98,7 +112,7 @@ const AssetTable = ({
                                     <div className="text-xs text-muted-foreground">{asset.serial_number}</div>
                                 </td>
                                 <td className="px-6 py-4">{asset.category}</td>
-                                <td className="px-6 py-4">{asset.departments?.name || 'N/A'}</td>
+                                <td className="px-6 py-4">{departmentName}</td>
                                 <td className="px-6 py-4 text-muted-foreground">{asset.suppliers?.company_name || 'N/A'}</td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(asset.status)}`}>
@@ -117,6 +131,7 @@ const AssetTable = ({
                                         {eolStatus.status}
                                     </span>
                                 </td>
+                                <td className="px-6 py-4">{asset.locations?.name || 'Unassigned'}</td>
                                 <td className="px-6 py-4 text-right font-medium">
                                     {asset.purchase_price ? `RM ${asset.purchase_price.toLocaleString()}` : '-'}
                                 </td>

@@ -39,10 +39,10 @@ const AssetDetails = () => {
 
     setIsLoading(true);
     try {
-      // 1. Fetch main asset record with supplier info
+      // 1. Fetch main asset record with supplier and location info
       const { data: asset, error: assetError } = await supabase
         .from('assets')
-        .select('*, suppliers(company_name)')
+        .select('*, suppliers(company_name), locations(name)')
         .eq('asset_tag', asset_tag)
         .single();
 
@@ -63,7 +63,7 @@ const AssetDetails = () => {
           supplier_name: asset.suppliers?.company_name || 'N/A',
           assigned_to_name: activeLoan?.employees?.full_name || (activeLoan?.departments?.name ? `Dept: ${activeLoan.departments.name}` : 'Unassigned'),
           assigned_to_email: activeLoan?.employees?.email || 'N/A',
-          location_name: activeLoan?.employees?.departments?.name || activeLoan?.departments?.name || asset.location || 'N/A'
+          location_name: asset.locations?.name || 'Unassigned'
         };
         setAssetData(formattedAsset);
 
@@ -137,7 +137,7 @@ const AssetDetails = () => {
   };
 
   const handleEdit = () => {
-    navigate('/asset-registration', { state: { editMode: true, asset: assetData } });
+    navigate(`/asset-registration?tag=${assetData.asset_tag}`);
   };
 
   const handlePrintQR = () => {

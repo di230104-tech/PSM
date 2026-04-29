@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { NotificationContainer } from '../../components/ui/NotificationToast';
 import AssetDetailsSection from './components/AssetDetailsSection';
 import FinancialSection from './components/FinancialSection';
+import TechnicalSpecsSection from './components/TechnicalSpecsSection';
 import ImageUpload from './components/ImageUpload';
 import Button from '../../components/ui/Button';
 import { useSelector } from 'react-redux'; // Import useSelector
@@ -23,9 +24,19 @@ const assetRegistrationSchema = z.object({
   purchase_price: z.coerce.number().positive({ message: 'Price must be a positive number' }),
   warranty_months: z.coerce.number().int().min(0, { message: 'Warranty must be a positive number' }),
   supplier_id: z.string().min(1, "Supplier is required"),
+  location_id: z.string().optional().nullable(),
   image_url: z.string().url().optional().nullable(),
   lifespan_years: z.preprocess((a) => parseInt(String(a)) || 0, z.number().int().min(0)),
   status: z.string().optional(),
+  technical_specs: z.object({
+    processor: z.string().optional(),
+    memory: z.string().optional(),
+    storage: z.string().optional(),
+    graphics: z.string().optional(),
+    os: z.string().optional(),
+    network_card: z.string().optional(),
+    ports: z.string().optional(),
+  }).optional(),
 }).refine(data => {
     if (data.purchase_date && data.warranty_months > 0) {
         const expiryDate = new Date(data.purchase_date);
@@ -48,6 +59,7 @@ const draftAssetSchema = z.object({
   purchase_price: z.preprocess((a) => parseFloat(String(a)) || 0, z.number().min(0).optional()),
   warranty_months: z.preprocess((a) => parseInt(String(a)) || 0, z.number().int().min(0).optional()),
   supplier_id: z.string().optional(),
+  location_id: z.string().optional().nullable(),
   image_url: z.string().url().optional().nullable(),
   lifespan_years: z.preprocess((a) => parseInt(String(a)) || 0, z.number().int().min(0).optional()),
   status: z.string().optional(),
@@ -64,6 +76,7 @@ const AssetRegistration = () => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [imageUrl, setImageUrl] = useState(null);
   const [asset, setAsset] = useState(null);
   const [drafts, setDrafts] = useState([]);
@@ -75,7 +88,8 @@ const AssetRegistration = () => {
       category: 'Laptop', 
       warranty_months: 12, 
       lifespan_years: 3, 
-      purchase_price: 0
+      purchase_price: 0,
+      location_id: ''
     }
   });
 
@@ -85,14 +99,20 @@ const AssetRegistration = () => {
   // --- Fetch Reference Data & Asset Data for Editing ---
   useEffect(() => {
     const fetchReferenceData = async () => {
+      // Fetch suppliers
       const { data: supps, error: suppsError } = await supabase.from('suppliers').select('id, company_name');
       if (suppsError) console.error("Error fetching suppliers:", suppsError);
 
-      console.log("Raw suppliers data from Supabase:", supps);
       if (supps) {
-        const processedSupps = supps.map(s => ({ value: s.id.toString(), label: s.company_name }));
-        setSuppliers(processedSupps);
-        console.log("Processed suppliers for dropdown:", processedSupps);
+        setSuppliers(supps.map(s => ({ value: s.id.toString(), label: s.company_name })));
+      }
+
+      // Fetch locations
+      const { data: locs, error: locsError } = await supabase.from('locations').select('id, name');
+      if (locsError) console.error("Error fetching locations:", locsError);
+
+      if (locs) {
+        setLocations(locs.map(l => ({ value: l.id.toString(), label: l.name })));
       }
     };
 
@@ -109,6 +129,7 @@ const AssetRegistration = () => {
             ...data,
             purchase_date: data.purchase_date ? new Date(data.purchase_date).toISOString().split('T')[0] : '',
             supplier_id: String(data.supplier_id),
+            location_id: data.location_id ? String(data.location_id) : '',
             lifespan_years: data.lifespan_years || 3,
           };
           reset(formattedData);
@@ -190,9 +211,11 @@ const AssetRegistration = () => {
       purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
       warranty_months: formData.warranty_months ? parseInt(formData.warranty_months) : null,
       supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+      location_id: formData.location_id ? formData.location_id : null,
       image_url: formData.image_url,
       lifespan_years: formData.lifespan_years ? parseInt(formData.lifespan_years) : null,
       lifespan_months: formData.lifespan_years ? parseInt(formData.lifespan_years) * 12 : null,
+      technical_specs: formData.technical_specs || null,
       user_id: userId,
     };
 
@@ -233,9 +256,11 @@ const AssetRegistration = () => {
       purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
       warranty_months: formData.warranty_months ? parseInt(formData.warranty_months) : null,
       supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
+      location_id: formData.location_id ? formData.location_id : null,
       image_url: formData.image_url,
       lifespan_years: formData.lifespan_years ? parseInt(formData.lifespan_years) : null,
       lifespan_months: formData.lifespan_years ? parseInt(formData.lifespan_years) * 12 : null,
+      technical_specs: formData.technical_specs || null,
       status: formData.status || 'in_storage',
     };
 
@@ -320,7 +345,12 @@ const AssetRegistration = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <AssetDetailsSection register={register} errors={errors} control={control} />
+        <AssetDetailsSection 
+          register={register} 
+          errors={errors} 
+          control={control} 
+          locations={locations}
+        />
         
         <FinancialSection 
           register={register} errors={errors} 
@@ -328,6 +358,11 @@ const AssetRegistration = () => {
           control={control}
           isEditMode={isEditMode}
           asset={asset}
+        />
+
+        <TechnicalSpecsSection 
+          register={register} 
+          errors={errors} 
         />
 
         <ImageUpload onUpload={handleImageUpload} initialImageUrl={imageUrl} />

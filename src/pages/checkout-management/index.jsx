@@ -107,7 +107,7 @@ const CheckoutManagement = () => {
     try {
       const { data, error } = await supabase
         .from('assets')
-        .select('*, suppliers(company_name)')
+        .select('*, suppliers(company_name), locations(name)')
         .eq('status', 'in_storage');
       if (error) {
         console.error('Error fetching in-storage assets:', error);
@@ -301,6 +301,14 @@ const CheckoutManagement = () => {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
       } else {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset successfully returned`, type: "success" }]);
+        // Log activity for asset check-in
+        await logActivity(
+          'asset_returned',
+          `Asset ${loan.assetName} (${loan.assetId}) checked back into storage`,
+          loan.assetId,
+          userId,
+          { condition: condition, notes: notes }
+        );
         // Refresh data
         const [loans, assets] = await Promise.all([fetchActiveLoans(), fetchInStorageAssets()]);
         setActiveLoans(loans);
