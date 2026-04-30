@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { LoadingSpinner } from '../../components/ui/LoadingState';
 import { formatCurrency } from '../../utils/formatters';
 import { NotificationContainer } from '../../components/ui/NotificationToast';
+import { logActivity } from '../../utils/activityLogger';
+import { cn } from '../../utils/cn';
 import WriteOffModal from '../../components/WriteOffModal';
+import WriteOffReviewPanel from './components/WriteOffReviewPanel';
+import { useSelector } from 'react-redux';
 
 const WriteOffsPage = () => {
     const [activeTab, setActiveTab] = useState('pending');
@@ -18,10 +23,18 @@ const WriteOffsPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [reasonFilter, setReasonFilter] = useState('');
     const [methodFilter, setMethodFilter] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [selectedAssetIds, setSelectedAssetIds] = useState([]);
+    const [isBulkApproving, setIsBulkApproving] = useState(false);
 
-    // Modal state
+    // Modal & Panel state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [isReviewPanelOpen, setIsReviewPanelOpen] = useState(false);
+    const [reviewAsset, setReviewAsset] = useState(null);
 
     const addNotification = (message, type = 'info') => {
         setNotifications(prev => [...prev, { id: Date.now(), message, type }]);
@@ -29,6 +42,7 @@ const WriteOffsPage = () => {
 
     useEffect(() => {
         fetchData();
+        setSelectedAssetIds([]);
     }, [activeTab]);
 
     const fetchData = async () => {
@@ -85,27 +99,133 @@ const WriteOffsPage = () => {
         setIsModalOpen(true);
     };
 
+    const handleReviewAsset = (asset) => {
+        setReviewAsset(asset);
+        setIsReviewPanelOpen(true);
+    };
+
     const handleSuccess = (message) => {
         addNotification(message, 'success');
         fetchData();
     };
 
-    const filteredDisposed = disposedAssets.filter(asset => {
-        const matchesSearch = asset.asset_tag.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             asset.product_name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesReason = !reasonFilter || asset.reason === reasonFilter;
-        const matchesMethod = !methodFilter || asset.disposal_method === methodFilter;
-        return matchesSearch && matchesReason && matchesMethod;
-    });
+    const filteredDisposed = useMemo(() => {
+        const filtered = disposedAssets.filter(asset => {
+            const matchesSearch = asset.asset_tag.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                 asset.product_name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesReason = !reasonFilter || asset.reason === reasonFilter;
+            const matchesMethod = !methodFilter || asset.disposal_method === methodFilter;
+            
+            // Date Range Filtering
+            let matchesDateRange = true;
+            if (startDate || endDate) {
+                const assetDate = new Date(asset.write_off_date);
+                if (startDate) {
+                    matchesDateRange = matchesDateRange && assetDate >= new Date(startDate);
+                }
+                if (endDate) {
+                    // Set end date to the end of the day
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    matchesDateRange = matchesDateRange && assetDate <= end;
+                }
+            }
 
-    const filteredPending = pendingAssets.filter(asset => {
-        return asset.asset_tag.toLowerCase().includes(searchQuery.toLowerCase()) || 
-               asset.product_name.toLowerCase().includes(searchQuery.toLowerCase());
-    });
+            return matchesSearch && matchesReason && matchesMethod && matchesDateRange;
+        });
+
+        return filtered.sort((a, b) => {
+            const dateA = new Date(a.write_off_date).getTime();
+            const dateB = new Date(b.write_off_date).getTime();
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+    }, [disposedAssets, searchQuery, reasonFilter, methodFilter, sortOrder, startDate, endDate]);
+
+    const filteredPending = useMemo(() => {
+        return pendingAssets.filter(asset => {
+            const matchesSearch = asset.asset_tag.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                 asset.product_name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = !categoryFilter || asset.category === categoryFilter;
+            return matchesSearch && matchesCategory;
+        });
+    }, [pendingAssets, searchQuery, categoryFilter]);
+
+    // Selection Handlers
+    const toggleSelectAll = () => {
+        if (selectedAssetIds.length === filteredPending.length) {
+            setSelectedAssetIds([]);
+        } else {
+            setSelectedAssetIds(filteredPending.map(a => a.asset_tag));
+        }
+    };
+
+    const toggleSelectRow = (assetTag) => {
+        setSelectedAssetIds(prev => 
+            prev.includes(assetTag) 
+                ? prev.filter(id => id !== assetTag) 
+                : [...prev, assetTag]
+        );
+    };
+
+    const handleBulkApprove = async () => {
+        if (selectedAssetIds.length === 0) return;
+        
+        setIsBulkApproving(true);
+        try {
+            // 1. Bulk Update Status
+            const { error: updateError } = await supabase
+                .from('assets')
+                .update({ 
+                    status: 'Written Off', 
+                    is_archived: true 
+                })
+                .in('asset_tag', selectedAssetIds);
+
+            if (updateError) throw updateError;
+
+            // 2. Log Activity for each (in parallel)
+            await Promise.all(selectedAssetIds.map(tag => 
+                logActivity(
+                    'asset_written_off',
+                    `Asset bulk approved for disposal`,
+                    tag,
+                    userId,
+                    {
+                        reason: 'Bulk Approval',
+                        disposal_method: 'Pending Batch Disposal',
+                        justification: 'Approved via bulk action in IT Management dashboard',
+                        authorized_by: authUser?.email || userId
+                    }
+                )
+            ));
+
+            addNotification(`Successfully approved ${selectedAssetIds.length} assets for disposal.`, 'success');
+            setSelectedAssetIds([]);
+            fetchData();
+        } catch (error) {
+            console.error('Bulk Approval Error:', error);
+            addNotification(`Bulk approval failed: ${error.message}`, 'error');
+        } finally {
+            setIsBulkApproving(false);
+        }
+    };
+
+    const selectionSummary = useMemo(() => {
+        const selected = pendingAssets.filter(a => selectedAssetIds.includes(a.asset_tag));
+        return {
+            count: selected.length,
+            totalValue: selected.reduce((sum, a) => sum + (Number(a.purchase_price) || 0), 0)
+        };
+    }, [pendingAssets, selectedAssetIds]);
+
+    const disposedMetrics = useMemo(() => {
+        return {
+            count: filteredDisposed.length,
+            totalValue: filteredDisposed.reduce((sum, a) => sum + (Number(a.purchase_price) || 0), 0)
+        };
+    }, [filteredDisposed]);
 
     // KPI Calculations
-    const totalDisposals = disposedAssets.length;
-    const totalValue = disposedAssets.reduce((sum, asset) => sum + (Number(asset.purchase_price) || 0), 0);
     const pendingCount = pendingAssets.length;
 
     // Filter Options
@@ -116,6 +236,11 @@ const WriteOffsPage = () => {
     const methodOptions = Array.from(new Set(disposedAssets.map(a => a.disposal_method)))
         .filter(m => m !== 'N/A')
         .map(m => ({ value: m, label: m }));
+
+    const categoryOptions = useMemo(() => {
+        const categories = Array.from(new Set(pendingAssets.map(a => a.category))).filter(Boolean);
+        return categories.map(c => ({ value: c, label: c }));
+    }, [pendingAssets]);
 
     const exportToCSV = () => {
         const dataToExport = activeTab === 'disposed' ? filteredDisposed : filteredPending;
@@ -171,7 +296,31 @@ const WriteOffsPage = () => {
                     <h1 className="text-2xl font-bold text-foreground">Write-Offs & Disposals</h1>
                     <p className="text-muted-foreground">Manage decommissioning pipeline and disposal audit logs.</p>
                 </div>
-                <Button iconName="Download" onClick={exportToCSV}>Export {activeTab === 'pending' ? 'Queue' : 'Audit Log'} (CSV)</Button>
+                <div className="flex gap-3">
+                    {activeTab === 'pending' && selectedAssetIds.length > 0 && (
+                        <div className="flex items-center gap-4 px-4 py-1.5 bg-muted/50 border border-border rounded-lg animate-in fade-in slide-in-from-right-4 duration-200">
+                            <div className="flex flex-col items-end">
+                                <span className="text-sm font-bold text-foreground">
+                                    {selectionSummary.count} Assets Selected
+                                </span>
+                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-tight">
+                                    Total Value: {formatCurrency(selectionSummary.totalValue)}
+                                </span>
+                            </div>
+                            <div className="w-px h-8 bg-border" />
+                            <Button 
+                                variant="primary" 
+                                className="bg-success hover:bg-success/90 border-none shadow-lg shadow-success/20"
+                                iconName="CheckCircle"
+                                onClick={handleBulkApprove}
+                                loading={isBulkApproving}
+                            >
+                                Approve {selectionSummary.count} for Disposal
+                            </Button>
+                        </div>
+                    )}
+                    <Button variant="outline" iconName="Download" onClick={exportToCSV}>Export {activeTab === 'pending' ? 'Queue' : 'Audit Log'} (CSV)</Button>
+                </div>
             </div>
 
             {/* Tab Buttons */}
@@ -219,8 +368,12 @@ const WriteOffsPage = () => {
                         <Icon name="Trash2" size={24} />
                     </div>
                     <div>
-                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Disposals</p>
-                        <h2 className="text-2xl font-bold">{totalDisposals}</h2>
+                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
+                            {activeTab === 'disposed' ? 'Visible Disposals' : 'Total Disposals'}
+                        </p>
+                        <h2 className="text-2xl font-bold">
+                            {activeTab === 'disposed' ? disposedMetrics.count : disposedAssets.length}
+                        </h2>
                     </div>
                 </div>
                 <div className="bg-card p-6 rounded-xl border border-border shadow-sm flex items-center gap-4">
@@ -228,8 +381,12 @@ const WriteOffsPage = () => {
                         <Icon name="DollarSign" size={24} />
                     </div>
                     <div>
-                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Value Disposed</p>
-                        <h2 className="text-2xl font-bold">{formatCurrency(totalValue)}</h2>
+                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
+                            {activeTab === 'disposed' ? 'Visible Value' : 'Total Value Disposed'}
+                        </p>
+                        <h2 className="text-2xl font-bold">
+                            {activeTab === 'disposed' ? formatCurrency(disposedMetrics.totalValue) : formatCurrency(disposedAssets.reduce((sum, a) => sum + (Number(a.purchase_price) || 0), 0))}
+                        </h2>
                     </div>
                 </div>
             </div>
@@ -245,18 +402,29 @@ const WriteOffsPage = () => {
                         iconName="Search"
                     />
                 </div>
+                <div className="w-full md:w-48">
+                    {activeTab === 'pending' ? (
+                        <Select
+                            label="Category"
+                            options={categoryOptions}
+                            value={categoryFilter}
+                            onChange={setCategoryFilter}
+                            placeholder="All Categories"
+                            clearable
+                        />
+                    ) : (
+                        <Select
+                            label="Reason"
+                            options={reasonOptions}
+                            value={reasonFilter}
+                            onChange={setReasonFilter}
+                            placeholder="All Reasons"
+                            clearable
+                        />
+                    )}
+                </div>
                 {activeTab === 'disposed' && (
                     <>
-                        <div className="w-full md:w-48">
-                            <Select
-                                label="Reason"
-                                options={reasonOptions}
-                                value={reasonFilter}
-                                onChange={setReasonFilter}
-                                placeholder="All Reasons"
-                                clearable
-                            />
-                        </div>
                         <div className="w-full md:w-48">
                             <Select
                                 label="Disposal Method"
@@ -267,6 +435,36 @@ const WriteOffsPage = () => {
                                 clearable
                             />
                         </div>
+                        <div className="w-full md:w-40">
+                            <Input
+                                label="From"
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="w-full md:w-40">
+                            <Input
+                                label="To"
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                        {(startDate || endDate) && (
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-10 mb-0.5 text-muted-foreground hover:text-foreground"
+                                iconName="X"
+                                onClick={() => {
+                                    setStartDate('');
+                                    setEndDate('');
+                                }}
+                            >
+                                Clear
+                            </Button>
+                        )}
                     </>
                 )}
             </div>
@@ -283,8 +481,16 @@ const WriteOffsPage = () => {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted/50 border-b border-border">
                                     <tr>
+                                        <th className="px-6 py-4 w-12">
+                                            <Checkbox 
+                                                checked={filteredPending.length > 0 && selectedAssetIds.length === filteredPending.length}
+                                                indeterminate={selectedAssetIds.length > 0 && selectedAssetIds.length < filteredPending.length}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        </th>
                                         <th className="px-6 py-4 font-semibold text-foreground">Asset Tag</th>
                                         <th className="px-6 py-4 font-semibold text-foreground">Product Name</th>
+                                        <th className="px-6 py-4 font-semibold text-foreground">Category</th>
                                         <th className="px-6 py-4 font-semibold text-foreground">Status</th>
                                         <th className="px-6 py-4 font-semibold text-foreground">Purchase Price</th>
                                         <th className="px-6 py-4 font-semibold text-foreground text-center">Actions</th>
@@ -293,19 +499,38 @@ const WriteOffsPage = () => {
                                 <tbody className="divide-y divide-border">
                                     {filteredPending.length === 0 ? (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-12 text-center text-muted-foreground">
+                                            <td colSpan="7" className="px-6 py-12 text-center text-muted-foreground">
                                                 <Icon name="Inbox" size={48} className="mx-auto mb-4 opacity-20" />
                                                 <p>No assets pending write-off.</p>
                                             </td>
                                         </tr>
                                     ) : (
                                         filteredPending.map((asset) => (
-                                            <tr key={asset.asset_tag} className="hover:bg-muted/30 transition-colors">
+                                            <tr 
+                                                key={asset.asset_tag} 
+                                                className={cn(
+                                                    "hover:bg-muted/30 transition-colors cursor-pointer",
+                                                    (selectedAssetIds.includes(asset.asset_tag) || reviewAsset?.asset_tag === asset.asset_tag) && "bg-primary/5"
+                                                )}
+                                                onClick={() => handleReviewAsset(asset)}
+                                            >
+                                                <td className="px-6 py-4" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleSelectRow(asset.asset_tag);
+                                                }}>
+                                                    <Checkbox 
+                                                        checked={selectedAssetIds.includes(asset.asset_tag)}
+                                                        onChange={() => toggleSelectRow(asset.asset_tag)}
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 font-mono font-medium text-primary">
                                                     {asset.asset_tag}
                                                 </td>
                                                 <td className="px-6 py-4 font-medium text-foreground">
                                                     {asset.product_name}
+                                                </td>
+                                                <td className="px-6 py-4 text-muted-foreground">
+                                                    {asset.category}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${
@@ -314,10 +539,10 @@ const WriteOffsPage = () => {
                                                         {asset.status.toUpperCase()}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-4 font-medium">
                                                     {formatCurrency(asset.purchase_price)}
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <Button 
                                                         size="sm" 
                                                         variant="ghost" 
@@ -338,7 +563,22 @@ const WriteOffsPage = () => {
                                     <tr>
                                         <th className="px-6 py-4 font-semibold text-foreground">Asset Tag</th>
                                         <th className="px-6 py-4 font-semibold text-foreground">Product Name</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Write-Off Date</th>
+                                        <th 
+                                            className={cn(
+                                                "px-6 py-4 font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors select-none group",
+                                                "flex items-center gap-1"
+                                            )}
+                                            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                                        >
+                                            Write-Off Date
+                                            <div className="text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity">
+                                                {sortOrder === 'desc' ? (
+                                                    <Icon name="ChevronDown" size={14} />
+                                                ) : (
+                                                    <Icon name="ChevronUp" size={14} />
+                                                )}
+                                            </div>
+                                        </th>
                                         <th className="px-6 py-4 font-semibold text-foreground">Reason</th>
                                         <th className="px-6 py-4 font-semibold text-foreground">Method</th>
                                         <th className="px-6 py-4 font-semibold text-foreground text-right">Original Value</th>
@@ -349,7 +589,11 @@ const WriteOffsPage = () => {
                                         <tr>
                                             <td colSpan="6" className="px-6 py-12 text-center text-muted-foreground">
                                                 <Icon name="Inbox" size={48} className="mx-auto mb-4 opacity-20" />
-                                                <p>No disposal records found.</p>
+                                                <p>
+                                                    {(startDate || endDate) 
+                                                        ? "No assets were disposed of during this date range." 
+                                                        : "No disposal records found."}
+                                                </p>
                                             </td>
                                         </tr>
                                     ) : (
@@ -396,6 +640,16 @@ const WriteOffsPage = () => {
                     onSuccess={handleSuccess}
                 />
             )}
+
+            <WriteOffReviewPanel
+                asset={reviewAsset}
+                isOpen={isReviewPanelOpen}
+                onClose={() => {
+                    setIsReviewPanelOpen(false);
+                    setReviewAsset(null);
+                }}
+                onSuccess={handleSuccess}
+            />
 
             <NotificationContainer 
                 notifications={notifications} 
