@@ -14,6 +14,7 @@ import AttachmentsTab from './components/AttachmentsTab';
 import AuditTab from './components/AuditTab';
 import QRCodeModal from './components/QRCodeModal';
 import WriteOffModal from '../../components/WriteOffModal';
+import RefurbishModal from '../../components/RefurbishModal';
 import { calculateEOLDate, getEOLStatus } from '../../utils/assetUtils';
 
 const AssetDetails = () => {
@@ -26,6 +27,7 @@ const AssetDetails = () => {
   const [notifications, setNotifications] = useState([]);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showWriteOffModal, setShowWriteOffModal] = useState(false);
+  const [showRefurbishModal, setShowRefurbishModal] = useState(false);
 
   // Data Payloads
   const [assetData, setAssetData] = useState(null);
@@ -161,6 +163,17 @@ const AssetDetails = () => {
     return !(isBroken || isExpired);
   };
 
+  const canBeRefurbished = () => {
+    if (!assetData) return false;
+    const isBroken = assetData.status === 'broken';
+    const isWrittenOff = assetData.status === 'Written Off';
+    const eolDate = calculateEOLDate(assetData.purchase_date, assetData.lifespan_months || (assetData.lifespan_years * 12));
+    const eolStatus = getEOLStatus(eolDate);
+    const isExpired = eolStatus.status === 'Expired';
+    
+    return isBroken || isWrittenOff || isExpired;
+  };
+
   const getWriteOffTooltip = () => {
     if (!assetData) return '';
     if (!isWriteOffDisabled()) return 'Decommission this asset from inventory';
@@ -172,6 +185,11 @@ const AssetDetails = () => {
     addNotification(`Redirecting to ${action} process...`, 'info');
     // For now, redirect to checkout management
     navigate('/checkout-management');
+  };
+
+  const handleRefurbishSuccess = (message) => {
+    addNotification(message, 'success');
+    fetchAllData();
   };
 
   if (isLoading) {
@@ -224,6 +242,18 @@ const AssetDetails = () => {
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" iconName="Printer" onClick={handlePrintQR}>Print QR</Button>
           <Button variant="outline" iconName="Edit" onClick={handleEdit}>Edit Asset</Button>
+          
+          {canBeRefurbished() && (
+            <Button 
+              variant="outline" 
+              className="border-success/30 text-success hover:bg-success/10"
+              iconName="Wrench" 
+              onClick={() => setShowRefurbishModal(true)}
+            >
+              Refurbish & Revive
+            </Button>
+          )}
+
           <Button 
             variant="outline" 
             className={`border-error/30 text-error hover:bg-error/10 ${isWriteOffDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -309,6 +339,15 @@ const AssetDetails = () => {
         />
       )}
 
+      {showRefurbishModal && (
+        <RefurbishModal
+          asset={assetData}
+          isOpen={showRefurbishModal}
+          onClose={() => setShowRefurbishModal(false)}
+          onSuccess={handleRefurbishSuccess}
+        />
+      )}
+
       <NotificationContainer 
         notifications={notifications} 
         onRemove={(id) => setNotifications(prev => prev.filter(n => n.id !== id))} 
@@ -318,3 +357,4 @@ const AssetDetails = () => {
 };
 
 export default AssetDetails;
+
