@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../../store/authSlice';
@@ -6,6 +6,9 @@ import Icon from '../AppIcon';
 import Button from './Button';
 import Input from './Input';
 import { NotificationContainer } from './NotificationToast';
+import { supabase } from '../../lib/supabaseClient';
+import useDebounce from '../../hooks/useDebounce';
+import QRCodeModal from '../../pages/asset-list/components/QRCodeModal';
 
 
 const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed }) => {
@@ -13,10 +16,59 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isResultsVisible, setIsResultsVisible] = useState(false);
+  const [selectedAssetForQR, setSelectedAssetForQR] = useState(null);
+  
   const searchRef = useRef(null);
+  const debouncedTerm = useDebounce(searchQuery, 300);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsResultsVisible(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Supabase Omni-Search Logic
+  useEffect(() => {
+    const performSearch = async () => {
+      if (debouncedTerm.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      setIsResultsVisible(true);
+
+      try {
+        const trimmedTerm = debouncedTerm.trim();
+        const { data, error } = await supabase
+          .from('assets')
+          .select('*, suppliers(company_name), locations(name)')
+          .or(`product_name.ilike.%${trimmedTerm}%,asset_tag.ilike.%${trimmedTerm}%,serial_number.ilike.%${trimmedTerm}%`)
+          .limit(5);
+
+        if (error) throw error;
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error('Search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    performSearch();
+  }, [debouncedTerm]);
 
   const addNotification = (message, type) => {
     setNotifications(prev => [...prev, { id: Date.now(), message, type }]);
@@ -24,16 +76,26 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
+    if (!isResultsVisible) setIsResultsVisible(true);
   };
 
-  const handleSearchSubmit = () => {
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
     const query = searchQuery.trim();
-    if (query) {
-      setTimeout(() => {
-        navigate(`/assets/${query}`);
-        setSearchQuery('');
-      }, 0);
+    if (!query) return;
+
+    setIsResultsVisible(false);
+    
+    if (searchResults.length > 0) {
+      const firstResult = searchResults[0];
+      // Use asset_tag if available, fallback to id
+      navigate(`/assets/${firstResult.asset_tag || firstResult.id}`);
+    } else {
+      // Navigate to asset list with search param as requested
+      navigate(`/asset-list?search=${encodeURIComponent(query)}`);
     }
+    
+    setSearchQuery('');
   };
 
   const toggleProfile = () => {
@@ -79,29 +141,138 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
             }`}>
               <Input
                 type="search"
-                placeholder="Search assets, employees, suppliers..."
+                placeholder="Search assets by ID, Name, or Serial..."
                 value={searchQuery}
                 onChange={handleSearchChange}
-                onFocus={() => setIsSearchExpanded(true)}
-                onBlur={() => setIsSearchExpanded(false)}
+                onFocus={() => {
+                  setIsSearchExpanded(true);
+                  if (searchQuery.length >= 2) setIsResultsVisible(true);
+                }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit(); }}
-                className="pl-10 pr-4 h-10 bg-muted/50 border-border focus:bg-background"
-              />              <Icon
+                className="pl-10 pr-10 h-10 bg-muted/50 border-border focus:bg-background"
+              />
+              <Icon
                 name="Search"
                 size={18}
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
               />
-              {searchQuery && (
+              {isSearching ? (
+                <Icon
+                  name="Loader2"
+                  size={16}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground animate-spin"
+                />
+              ) : searchQuery && (
                 <Button
-                  type="button" // Important: type="button" to not submit form
+                  type="button"
                   variant="ghost"
                   size="icon"
                   iconName="X"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                    setIsResultsVisible(false);
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-6 w-6 text-muted-foreground hover:text-foreground"
                 />
               )}
             </div>
+
+            {/* Search Results Dropdown */}
+            {isResultsVisible && searchQuery.trim().length >= 2 && (
+              <div className="absolute top-full left-0 mt-2 w-full md:w-96 bg-card border border-border rounded-lg shadow-modal z-200 overflow-hidden">
+                {isSearching ? (
+                  <div className="p-4 text-center">
+                    <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+                      <Icon name="Loader2" size={16} className="animate-spin" />
+                      <span>Searching assets...</span>
+                    </div>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="py-2">
+                    {searchResults.map((asset) => (
+                      <div 
+                        key={asset.id} 
+                        className="group flex items-center justify-between px-4 py-2 hover:bg-muted cursor-pointer transition-colors"
+                        onClick={() => {
+                          navigate(`/assets/${asset.asset_tag || asset.id}`);
+                          setIsResultsVisible(false);
+                          setSearchQuery('');
+                        }}
+                      >
+                        <div className="flex items-center space-x-3 overflow-hidden">
+                          <div className="w-8 h-8 rounded bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
+                            {asset.image_url ? (
+                              <img src={asset.image_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Icon name="Package" size={16} className="text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="truncate">
+                            <div className="text-sm font-medium text-foreground truncate">
+                              {asset.product_name}
+                            </div>
+                            <div className="flex items-center space-x-2 mt-0.5">
+                              <span className="text-[10px] font-bold px-1.5 py-0 bg-primary/10 text-primary rounded border border-primary/20 uppercase">
+                                {asset.asset_tag}
+                              </span>
+                              <span className={`text-[10px] px-1.5 py-0 rounded-full border ${
+                                asset.status === 'In Use' ? 'bg-success/10 text-success border-success/20' :
+                                asset.status === 'Maintenance' ? 'bg-warning/10 text-warning border-warning/20' :
+                                'bg-muted text-muted-foreground border-border'
+                              }`}>
+                                {asset.status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            iconName="QrCode" 
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-background"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAssetForQR(asset);
+                            }}
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            iconName="Wrench" 
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-background"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/assets/${asset.asset_tag || asset.id}?tab=maintenance`);
+                              setIsResultsVisible(false);
+                              setSearchQuery('');
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <div className="mt-2 p-2 border-t border-border">
+                      <button 
+                        className="w-full py-1.5 text-xs text-center text-primary hover:underline font-medium"
+                        onClick={() => {
+                          const query = searchQuery.trim();
+                          navigate(`/asset-list?search=${encodeURIComponent(query)}`);
+                          setIsResultsVisible(false);
+                          setSearchQuery('');
+                        }}
+                      >
+                        View all results
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-muted-foreground">No assets found matching "{searchQuery}"</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -192,6 +363,15 @@ const Header = ({ user, onSearch, onNotificationClick, onProfileClick, collapsed
           </div>
         </div>
       </div>
+      
+      {/* QR Code Modal */}
+      {selectedAssetForQR && (
+        <QRCodeModal 
+          asset={selectedAssetForQR}
+          isOpen={!!selectedAssetForQR}
+          onClose={() => setSelectedAssetForQR(null)}
+        />
+      )}
     </header>
   );
 };

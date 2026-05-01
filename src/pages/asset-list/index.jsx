@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
@@ -70,6 +70,9 @@ const QRCodeModal = ({ asset, onClose }) => {
 const AssetList = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const urlSearchQuery = searchParams.get('search') || '';
+
     const [isLoading, setIsLoading] = useState(true);
     const [assets, setAssets] = useState([]);
     const [selectedAsset, setSelectedAsset] = useState(null);
@@ -85,7 +88,7 @@ const AssetList = () => {
 
     // Filter States
     const [filters, setFilters] = useState({
-        searchQuery: '',
+        searchQuery: urlSearchQuery,
         category: '',
         status: [],
         department: '',

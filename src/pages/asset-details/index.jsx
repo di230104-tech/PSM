@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { LoadingSpinner } from '../../components/ui/LoadingState';
 import { NotificationContainer } from '../../components/ui/NotificationToast';
@@ -20,9 +20,10 @@ import { calculateEOLDate, getEOLStatus } from '../../utils/assetUtils';
 const AssetDetails = () => {
   const { asset_tag } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // State Management
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'details');
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [showQRModal, setShowQRModal] = useState(false);
