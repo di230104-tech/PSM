@@ -57,8 +57,8 @@ const Dashboard = () => {
 
             // --- CALCULATIONS ---
             const totalAssets = assets.length;
-            const inUseCount = assets.filter(a => a.status === 'checked_out').length;
-            const inStorageCount = assets.filter(a => a.status === 'in_storage').length;
+            const inUseCount = assets.filter(a => a.status === 'In Use').length;
+            const inStorageCount = assets.filter(a => a.status === 'Available').length;
             
             // Dummy logic for "Expiring Soon" (since we might not have warranty dates set perfectly yet)
             // In a real scenario, compare 'warranty_months' + 'purchase_date' vs Today

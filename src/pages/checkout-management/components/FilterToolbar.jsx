@@ -64,11 +64,11 @@ const FilterToolbar = ({ filters, onFilterChange, onBulkOperation }) => {
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Search and Filters */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Employee Search */}
+          {/* Assignee Search */}
           <div className="relative">
             <Input
               type="text"
-              placeholder="Search employee..."
+              placeholder="Search assignee..."
               value={filters?.employee || ''}
               onChange={(e) => handleFilterChange('employee', e?.target?.value)}
               className="pr-10"
@@ -190,7 +190,7 @@ const FilterToolbar = ({ filters, onFilterChange, onBulkOperation }) => {
             <div className="flex items-center gap-2">
               {filters?.employee && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md">
-                  Employee: {filters?.employee}
+                  Assignee: {filters?.employee}
                   <button onClick={() => handleFilterChange('employee', '')}>
                     <AppIcon name="X" size={12} />
                   </button>

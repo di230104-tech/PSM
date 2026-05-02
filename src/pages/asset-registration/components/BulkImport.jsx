@@ -71,7 +71,7 @@ const BulkImport = () => {
             purchase_price: parseFloat(item['Purchase Price']) || 0,
             warranty_months: warrantyMonths,
             supplier_id: foundSupplier ? foundSupplier.id : null,
-            status: 'in_storage',
+            status: 'Available',
             asset_tag: `ISD-${catPrefix}-${randomId}`,
             lifespan_years: 3,
           };

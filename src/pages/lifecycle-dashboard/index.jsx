@@ -25,7 +25,7 @@ const LifecycleDashboard = () => {
         const { data, error } = await supabase
           .from('assets')
           .select('asset_tag, product_name, category, purchase_date, lifespan_months, purchase_price, status')
-          .in('status', ['checked_out', 'in_storage']); // Active/In Use statuses
+          .in('status', ['In Use', 'Available', 'checked_out', 'in_storage']); // Inclusive search for active assets
 
         if (error) throw error;
 

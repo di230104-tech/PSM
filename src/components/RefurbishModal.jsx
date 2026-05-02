@@ -46,7 +46,7 @@ const RefurbishModal = ({ asset, isOpen, onClose, onSuccess }) => {
             const { error: updateError } = await supabase
                 .from('assets')
                 .update({ 
-                    status: 'in_storage', 
+                    status: 'Available', 
                     technical_specs: updatedSpecs,
                     lifespan_months: newLifespan
                 })

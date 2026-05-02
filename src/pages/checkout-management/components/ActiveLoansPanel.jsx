@@ -88,9 +88,9 @@ const ActiveLoansPanel = ({ loans, filters, onCheckIn }) => {
     return (
       <div className="text-center py-12">
         <AppIcon name="Package" size={48} className="mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium text-foreground mb-2">No Active Loans</h3>
+        <h3 className="text-lg font-medium text-foreground mb-2">No Active Assignments</h3>
         <p className="text-muted-foreground mb-6">
-          {loans?.length ? 'No loans match your current filters.' : 'All assets are currently in storage.'}
+          {loans?.length ? 'No assignments match your current filters.' : 'All assets are currently in storage.'}
         </p>
         {loans?.length && (
           <Button variant="outline">
@@ -180,8 +180,9 @@ const ActiveLoansPanel = ({ loans, filters, onCheckIn }) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      iconName="LogIn"
+                      iconName="ArrowLeftCircle"
                       onClick={() => onCheckIn?.(loan)}
+                      title="Return Asset"
                       className="text-primary hover:text-primary"
                     />
                   </div>
@@ -204,7 +205,7 @@ const ActiveLoansPanel = ({ loans, filters, onCheckIn }) => {
 
       {/* Summary */}
       <div className="text-center text-sm text-muted-foreground pt-4">
-        Showing {filteredLoans?.length} of {loans?.length} active loans
+        Showing {filteredLoans?.length} of {loans?.length} active assignments
       </div>
     </div>
   );

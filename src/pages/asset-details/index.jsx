@@ -15,7 +15,11 @@ import AuditTab from './components/AuditTab';
 import QRCodeModal from './components/QRCodeModal';
 import WriteOffModal from '../../components/WriteOffModal';
 import RefurbishModal from '../../components/RefurbishModal';
+import AssignAssetModal from './components/AssignAssetModal';
+import ReturnAssetModal from '../checkout-management/components/CheckInModal'; // Reusing CheckInModal as ReturnAssetModal
 import { calculateEOLDate, getEOLStatus } from '../../utils/assetUtils';
+import { useSelector } from 'react-redux';
+import { logActivity } from '../../utils/activityLogger';
 
 const AssetDetails = () => {
   const { asset_tag } = useParams();
@@ -29,12 +33,19 @@ const AssetDetails = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showWriteOffModal, setShowWriteOffModal] = useState(false);
   const [showRefurbishModal, setShowRefurbishModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
 
   // Data Payloads
   const [assetData, setAssetData] = useState(null);
+  const [activeLoan, setActiveLoan] = useState(null);
+  const [assignmentHistory, setAssignmentHistory] = useState([]);
   const [maintenanceData, setMaintenanceData] = useState([]);
   const [attachmentsData, setAttachmentsData] = useState([]);
   const [auditData, setAuditData] = useState([]);
+
+  const { user } = useSelector((state) => state.auth);
+  const userId = user?.id;
 
   // Fetch all required data for the asset
   const fetchAllData = async () => {
@@ -51,21 +62,48 @@ const AssetDetails = () => {
 
       if (assetError) throw assetError;
 
-      // 2. Fetch Active Loan (Assignment Data)
-      const { data: activeLoan } = await supabase
+      // 2. Fetch Assignment History (All Loans)
+      const { data: allLoans, error: historyError } = await supabase
         .from('loans')
-        .select('employees(full_name, email, departments(name)), departments(name)')
+        .select('*, employees(full_name, email, departments(name)), departments(name)')
         .eq('asset_tag', asset_tag)
-        .eq('status', 'active')
-        .maybeSingle();
+        .order('checkout_date', { ascending: false });
+
+      if (historyError) throw historyError;
+
+      // Detect active loan (Unreturned assignment)
+      const active = allLoans?.find(l => !l.actual_return_date);
 
       if (asset) {
+        if (active) {
+          setActiveLoan({
+            id: active.id,
+            assetId: asset.asset_tag,
+            assetName: asset.product_name,
+            assetCategory: asset.category,
+            checkoutDate: active.checkout_date,
+            expectedReturnDate: active.expected_return_date,
+            employee: active.employees ? {
+              full_name: active.employees.full_name,
+              department: active.employees.departments?.name
+            } : null,
+            assignedTo: active.departments ? {
+              name: active.departments.name,
+              department: active.departments.name
+            } : null
+          });
+        } else {
+          setActiveLoan(null);
+        }
+
+        setAssignmentHistory(allLoans || []);
+
         // Flatten/Format data for easier use in components
         const formattedAsset = {
           ...asset,
           supplier_name: asset.suppliers?.company_name || 'N/A',
-          assigned_to_name: activeLoan?.employees?.full_name || (activeLoan?.departments?.name ? `Dept: ${activeLoan.departments.name}` : 'Unassigned'),
-          assigned_to_email: activeLoan?.employees?.email || 'N/A',
+          assigned_to_name: active?.employees?.full_name || (active?.departments?.name ? `Dept: ${active.departments.name}` : 'Unassigned'),
+          assigned_to_email: active?.employees?.email || 'N/A',
           location_name: asset.locations?.name || 'Unassigned'
         };
         setAssetData(formattedAsset);
@@ -155,8 +193,8 @@ const AssetDetails = () => {
   const isWriteOffDisabled = () => {
     if (!assetData) return true;
     
-    // Rule: status === 'broken' OR EOL passed
-    const isBroken = assetData.status === 'broken';
+    // Rule: status === 'Broken' OR EOL passed
+    const isBroken = assetData.status === 'Broken';
     const eolDate = calculateEOLDate(assetData.purchase_date, assetData.lifespan_months || (assetData.lifespan_years * 12));
     const eolStatus = getEOLStatus(eolDate);
     const isExpired = eolStatus.status === 'Expired';
@@ -166,7 +204,7 @@ const AssetDetails = () => {
 
   const canBeRefurbished = () => {
     if (!assetData) return false;
-    const isBroken = assetData.status === 'broken';
+    const isBroken = assetData.status === 'Broken';
     const isWrittenOff = assetData.status === 'Written Off';
     const eolDate = calculateEOLDate(assetData.purchase_date, assetData.lifespan_months || (assetData.lifespan_years * 12));
     const eolStatus = getEOLStatus(eolDate);
@@ -181,11 +219,94 @@ const AssetDetails = () => {
     return 'Only broken or expired (EOL) assets can be written off';
   };
 
-  const handleStatusAction = () => {
-    const action = assetData?.status === 'checked_out' ? 'Check In' : 'Check Out';
-    addNotification(`Redirecting to ${action} process...`, 'info');
-    // For now, redirect to checkout management
-    navigate('/checkout-management');
+  const handleStatusAction = async (e) => {
+    const isInUse = ['In Use', 'overdue'].includes(assetData?.status);
+    console.log("Status action triggered. Current status:", assetData?.status, "Is in use:", isInUse);
+    
+    if (isInUse) {
+      if (!activeLoan) {
+        console.warn("Ghost state detected! Auto-healing asset...");
+        addNotification("Fixing ghost data mismatch...", "info");
+
+        try {
+          const { error } = await supabase
+            .from('assets')
+            .update({ status: 'Available' }) // Force back to Available
+            .eq('asset_tag', assetData.asset_tag);
+
+          if (error) throw error;
+
+          addNotification("Asset auto-fixed and is now Available!", "success");
+          fetchAllData(); // Refresh the page data
+        } catch (error) {
+          console.error("Failed to auto-heal:", error);
+          addNotification(`Failed to fix asset status: ${error.message}`, "error");
+        }
+        return; // Stop execution so the modal doesn't open
+      }
+      
+      console.log("Opening Return Modal. activeLoan is:", activeLoan);
+      setShowReturnModal(true);
+    } else {
+      console.log("Opening Assign Modal");
+      setShowAssignModal(true);
+    }
+  };
+
+  const handleReturnSuccess = async (loanId, condition, notes) => {
+    try {
+      const { error: loanError } = await supabase
+        .from('loans')
+        .update({
+          status: 'returned',
+          actual_return_date: new Date().toISOString(),
+          notes: notes,
+        })
+        .eq('id', loanId);
+
+      if (loanError) throw loanError;
+
+      // 1. Strictly map the condition to the approved status
+      let safeStatus = 'Available'; 
+      if (condition === 'Damaged') {
+        safeStatus = 'In Repair';
+      } else if (condition === 'Broken') {
+        safeStatus = 'Broken';
+      } else if (condition === 'Good') {
+        safeStatus = 'Available';
+      }
+
+      console.log("SENDING TO SUPABASE -> Status:", safeStatus);
+
+      // 2. Execute the Supabase update using the mapped status
+      const { error: assetError } = await supabase
+        .from('assets')
+        .update({ 
+          status: safeStatus,  // CRITICAL: Use safeStatus, NOT the raw condition
+          condition: condition,      // Update condition column as well
+          current_department_id: null 
+        })
+        .eq('asset_tag', assetData.asset_tag);
+
+      if (assetError) throw assetError;
+
+      // Log activity
+      await logActivity(
+        'asset_returned',
+        `Asset ${assetData.product_name} (${assetData.asset_tag}) returned with condition: ${condition}`,
+        assetData.asset_tag,
+        userId,
+        { condition: condition, notes: notes, status: safeStatus }
+      );
+
+      addNotification('Asset successfully returned', 'success');
+      setShowReturnModal(false);
+      fetchAllData();
+    } catch (error) {
+      console.error('Return error:', error);
+      addNotification(`Failed to return asset: ${error.message}`, 'error');
+      throw error; // Re-throw so the modal can handle it
+    }
   };
 
   const handleRefurbishSuccess = (message) => {
@@ -230,8 +351,8 @@ const AssetDetails = () => {
                 {assetData.asset_tag}
               </span>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                assetData.status === 'in_storage' ? 'bg-success/10 text-success border-success/20' :
-                assetData.status === 'checked_out' ? 'bg-primary/10 text-primary border-primary/20' :
+                assetData.status === 'Available' ? 'bg-success/10 text-success border-success/20' :
+                assetData.status === 'In Use' ? 'bg-primary/10 text-primary border-primary/20' :
                 'bg-muted text-muted-foreground border-border'
               }`}>
                 {assetData.status?.replace(/_/g, ' ')?.toUpperCase()}
@@ -265,11 +386,11 @@ const AssetDetails = () => {
             Write Off
           </Button>
           <Button 
-            variant={assetData.status === 'checked_out' ? 'default' : 'primary'}
-            iconName={assetData.status === 'checked_out' ? 'LogIn' : 'LogOut'}
+            variant={['In Use', 'overdue'].includes(assetData.status) ? 'default' : 'primary'}
+            iconName={['In Use', 'overdue'].includes(assetData.status) ? 'UserMinus' : 'UserPlus'}
             onClick={handleStatusAction}
           >
-            {assetData.status === 'checked_out' ? 'Check In' : 'Check Out'}
+            {['In Use', 'overdue'].includes(assetData.status) ? 'Return Asset' : 'Assign Asset'}
           </Button>
         </div>
       </div>
@@ -303,7 +424,7 @@ const AssetDetails = () => {
 
         {/* Tab Content Area */}
         <div className="p-6">
-          {activeTab === 'details' && <DetailsTab asset={assetData} maintenanceHistory={maintenanceData} />}
+          {activeTab === 'details' && <DetailsTab asset={assetData} assignmentHistory={assignmentHistory} maintenanceHistory={maintenanceData} />}
           {activeTab === 'maintenance' && (
             <MaintenanceTab 
               assetTag={asset_tag} 
@@ -326,7 +447,6 @@ const AssetDetails = () => {
       {showQRModal && (
         <QRCodeModal
           asset={assetData}
-          isOpen={showQRModal}
           onClose={() => setShowQRModal(false)}
         />
       )}
@@ -346,6 +466,26 @@ const AssetDetails = () => {
           isOpen={showRefurbishModal}
           onClose={() => setShowRefurbishModal(false)}
           onSuccess={handleRefurbishSuccess}
+        />
+      )}
+
+      {showAssignModal && (
+        <AssignAssetModal
+          asset={assetData}
+          isOpen={showAssignModal}
+          onClose={() => setShowAssignModal(false)}
+          onSuccess={(msg) => {
+            addNotification(msg, 'success');
+            fetchAllData();
+          }}
+        />
+      )}
+
+      {showReturnModal && activeLoan && (
+        <ReturnAssetModal
+          loan={activeLoan}
+          onCheckIn={handleReturnSuccess}
+          onClose={() => setShowReturnModal(false)}
         />
       )}
 

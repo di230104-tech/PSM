@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
 import Button from '../../components/ui/Button';
@@ -14,58 +13,7 @@ import { logActivity } from '../../utils/activityLogger'; // Import logActivity
 import { FilterToolbar } from './components/FilterToolbar'; // Import FilterToolbar
 import AssetTable from './components/AssetTable'; // Import AssetTable
 import MfaChallengeModal from '../../components/ui/MfaChallengeModal'; // Import MfaChallengeModal
-
-// --- QR Code Modal Component ---
-const QRCodeModal = ({ asset, onClose }) => {
-    if (!asset) return null;
-    const qrValue = JSON.stringify({ tag: asset.asset_tag, serial: asset.serial_number });
-    const handlePrint = () => window.print();
-
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center print:bg-white overflow-hidden">
-            <style>{`
-                @media print {
-                    body > *:not(.printable-area) { display: none !important; }
-                    .printable-area { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-                    .no-print { display: none !important; }
-                }
-            `}</style>
-            
-            {/* Backdrop */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/60"
-                onClick={onClose}
-            />
-
-            {/* Modal Content */}
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="bg-card rounded-lg shadow-xl max-w-sm w-full relative printable-area z-10"
-            >
-                <div id="qr-code-content" className="p-8 text-center">
-                    <h3 className="text-lg font-bold text-foreground mb-2">{asset.product_name}</h3>
-                    <div className="bg-white p-4 rounded-md inline-block">
-                        <QRCode value={qrValue} size={256} />
-                    </div>
-                    <div className="mt-4 text-left space-y-2">
-                        <p><strong className="text-muted-foreground">Asset Tag:</strong> {asset.asset_tag}</p>
-                        <p><strong className="text-muted-foreground">Serial No:</strong> {asset.serial_number}</p>
-                    </div>
-                </div>
-                <div className="px-6 py-4 bg-muted/50 flex justify-end gap-3 no-print">
-                    <Button variant="outline" onClick={onClose}>Close</Button>
-                    <Button onClick={handlePrint} iconName="Printer">Print</Button>
-                </div>
-            </motion.div>
-        </div>
-    );
-};
+import QRCodeModal from '../asset-details/components/QRCodeModal'; // Import the standardized modal
 
 const AssetList = () => {
     const navigate = useNavigate();

@@ -2,41 +2,38 @@ import React from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
+import { formatAssetStatus } from '../../../utils/formatters';
+import PrintableAssetLabel from '../../../components/PrintableAssetLabel';
 
-const QuickViewPanel = ({ asset, isOpen, onClose, onEdit, onPrintQR }) => {
+const QuickViewPanel = ({ asset, isOpen, onClose, onEdit }) => {
   if (!isOpen || !asset) return null;
+
+  const handlePrintQR = () => {
+    window.print();
+  };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
+      case 'in use':
       case 'checked_out':
         return 'bg-success/10 text-success border-success/20';
+      case 'available':
       case 'in_storage':
         return 'bg-warning/10 text-warning border-warning/20';
+      case 'in repair':
       case 'in_repair':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'broken':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'retired':
+      case 'written off':
+      case 'written-off':
+      case 'written_off':
         return 'bg-muted text-muted-foreground border-border';
+      case 'lost':
+      case 'lost/stolen':
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       default:
         return 'bg-muted text-muted-foreground border-border';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'checked_out':
-        return 'Checked Out';
-      case 'in_storage':
-        return 'In Storage';
-      case 'in_repair':
-        return 'In Repair';
-      case 'broken':
-        return 'Broken';
-      case 'retired':
-        return 'Retired';
-      default:
-        return status;
     }
   };
 
@@ -58,13 +55,16 @@ const QuickViewPanel = ({ asset, isOpen, onClose, onEdit, onPrintQR }) => {
 
   return (
     <>
+      {/* Sticker layout for physical printing - only visible during print */}
+      <PrintableAssetLabel asset={asset} />
+
       {/* Overlay */}
       <div 
-        className="fixed inset-0 bg-black/50 z-300"
+        className="fixed inset-0 bg-black/50 z-300 print:hidden"
         onClick={onClose}
       />
       {/* Slide-over Panel */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-card border-l border-border z-400 overflow-y-auto">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-card border-l border-border z-400 overflow-y-auto print:hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
@@ -104,7 +104,7 @@ const QuickViewPanel = ({ asset, isOpen, onClose, onEdit, onPrintQR }) => {
                 </p>
               </div>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(asset?.status)}`}>
-                {getStatusLabel(asset?.status)}
+                {formatAssetStatus(asset?.status)}
               </span>
             </div>
 
@@ -230,7 +230,7 @@ const QuickViewPanel = ({ asset, isOpen, onClose, onEdit, onPrintQR }) => {
             <Button
               variant="outline"
               iconName="QrCode"
-              onClick={() => onPrintQR(asset)}
+              onClick={handlePrintQR}
               className="flex-1"
             >
               Print QR

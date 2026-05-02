@@ -50,11 +50,12 @@ export function FilterToolbar({
   ];
 
   const statusOptions = [
-    { value: 'checked_out', label: formatAssetStatus('checked_out') },
-    { value: 'in_storage', label: formatAssetStatus('in_storage') },
-    { value: 'in_repair', label: formatAssetStatus('in_repair') },
-    { value: 'retired', label: formatAssetStatus('retired') },
-    { value: 'lost', label: formatAssetStatus('lost') }
+    { value: 'Available', label: formatAssetStatus('Available') },
+    { value: 'In Use', label: formatAssetStatus('In Use') },
+    { value: 'In Repair', label: formatAssetStatus('In Repair') },
+    { value: 'Broken', label: formatAssetStatus('Broken') },
+    { value: 'Written-Off', label: formatAssetStatus('Written-Off') },
+    { value: 'Lost/Stolen', label: formatAssetStatus('Lost/Stolen') }
   ];
 
   const locationOptions = [
@@ -163,7 +164,7 @@ export function FilterToolbar({
         />
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Date Range</label>
+          <label className="text-sm font-medium text-foreground">Date Registered</label>
           <div className="grid grid-cols-2 gap-2">
             <Input
               type="date"

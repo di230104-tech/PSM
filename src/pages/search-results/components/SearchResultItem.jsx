@@ -9,14 +9,18 @@ const SearchResultItem = ({ asset, searchQuery, onAddToFavorites }) => {
   const navigate = useNavigate();
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'in_use':
+    switch (status?.toLowerCase()) {
+      case 'in use':
       case 'checked_out':
         return 'bg-success/10 text-success border-success/20';
+      case 'available':
       case 'in_storage':
         return 'bg-warning/10 text-warning border-warning/20';
+      case 'in repair':
       case 'in_repair':
         return 'bg-error/10 text-error border-error/20';
+      case 'written-off':
+      case 'written off':
       case 'retired':
         return 'bg-muted text-muted-foreground border-border';
       default:

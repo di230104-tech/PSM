@@ -37,7 +37,7 @@ const WriteOffReviewPanel = ({ asset, isOpen, onClose, onSuccess }) => {
             const { error: updateError } = await supabase
                 .from('assets')
                 .update({ 
-                    status: 'Written Off', 
+                    status: 'Written-Off', 
                     is_archived: true 
                 })
                 .eq('asset_tag', asset.asset_tag);
@@ -72,7 +72,7 @@ const WriteOffReviewPanel = ({ asset, isOpen, onClose, onSuccess }) => {
             const { error: updateError } = await supabase
                 .from('assets')
                 .update({ 
-                    status: 'in_storage'
+                    status: 'Available'
                 })
                 .eq('asset_tag', asset.asset_tag);
 

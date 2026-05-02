@@ -20,17 +20,17 @@ import { logActivity } from '../../utils/activityLogger'; // Import logActivity
 const CheckoutManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
-  const [activeTab, setActiveTab] = useState('active-loans');
+  const [activeTab, setActiveTab] = useState('active-assignments');
   const [showAssetSelection, setShowAssetSelection] = useState(false);
   const [showEmployeeSearch, setShowEmployeeSearch] = useState(false);
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showAssignmentTypeSelection, setShowAssignmentTypeSelection] = useState(false);
   const [showDepartmentSearch, setShowDepartmentSearch] = useState(false); // New state for department search modal
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState(null); // New state for selected department
-  const [checkInAsset, setCheckInAsset] = useState(null);
+  const [returnAsset, setReturnAsset] = useState(null);
   const [activeLoans, setActiveLoans] = useState([]);
   const [inStorageAssets, setInStorageAssets] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -65,8 +65,8 @@ const CheckoutManagement = () => {
       .in('status', ['active', 'overdue']);
 
     if (error) {
-      console.error('Error fetching active loans:', error);
-      addNotification(`Error fetching loans: ${error.message}`, 'error');
+      console.error('Error fetching active assignments:', error);
+      addNotification(`Error fetching assignments: ${error.message}`, 'error');
       return [];
     }
 
@@ -108,13 +108,12 @@ const CheckoutManagement = () => {
       const { data, error } = await supabase
         .from('assets')
         .select('*, suppliers(company_name), locations(name)')
-        .eq('status', 'in_storage');
+        .eq('status', 'Available');
       if (error) {
         console.error('Error fetching in-storage assets:', error);
         addNotification(`Error fetching assets: ${error.message}`, 'error');
         return [];
       }
-      console.log('Fetched in-storage assets:', data);
       return data;
     } catch (err) {
       console.error('Unexpected error fetching assets:', err);
@@ -125,16 +124,16 @@ const CheckoutManagement = () => {
 
   const statsData = [
     {
-      title: "Active Loans",
+      title: "Active Assignments",
       value: activeLoans.length,
-      subtitle: "Currently checked out",
+      subtitle: "Currently assigned",
       icon: "Package",
       color: "primary"
     },
     {
       title: "In Storage",
       value: inStorageAssets.length,
-      subtitle: "Ready for checkout",
+      subtitle: "Ready for assignment",
       icon: "CheckCircle",
       color: "success"
     }
@@ -150,8 +149,6 @@ const CheckoutManagement = () => {
         fetchInStorageAssets(),
         fetchDepartments(), // Fetch departments
       ]);
-      console.log('Processed loans:', loans);
-      console.log('Processed assets:', assets);
       setActiveLoans(loans);
       setInStorageAssets(assets);
       setDepartments(departments); // Set departments state
@@ -169,7 +166,7 @@ const CheckoutManagement = () => {
     setNotifications((prev) => prev?.filter((notification) => notification?.id !== id));
   };
 
-  const handleStartCheckout = () => {
+  const handleStartAssignment = () => {
     setShowAssetSelection(true);
   };
 
@@ -185,7 +182,7 @@ const CheckoutManagement = () => {
 
     if (!selectedAsset || !employee) return;
 
-    // Process checkout
+    // Process assignment
     const newLoan = {
       asset_tag: selectedAsset.asset_tag,
       employee_id: employee.id,
@@ -193,20 +190,25 @@ const CheckoutManagement = () => {
       expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'active',
     };
-    console.log('New loan object for employee:', newLoan);
 
     const { error: loanError } = await supabase.from('loans').insert([newLoan]);
 
     if (loanError) {
-      console.error('Supabase Loan INSERT Error:', loanError); // More specific log
-      setNotifications((prev) => [...prev, { id: Date.now(), message: `Error checking out asset (INSERT failed): ${loanError.message}`, type: "error" }]);
+      console.error('Supabase Loan INSERT Error:', loanError);
+      setNotifications((prev) => [...prev, { id: Date.now(), message: `Error assigning asset: ${loanError.message}`, type: "error" }]);
     } else {
-      console.log('Loan INSERT successful. Now updating asset status and refetching data...'); // Success log
-      const { error: assetError } = await supabase.from('assets').update({ status: 'checked_out', current_department_id: employee.department_id }).eq('asset_tag', selectedAsset.asset_tag);
+      const { error: assetError } = await supabase
+        .from('assets')
+        .update({ 
+          status: 'In Use', 
+          current_department_id: employee.department_id 
+        })
+        .eq('asset_tag', selectedAsset.asset_tag);
+      
       if (assetError) {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
       } else {
-        setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset ${selectedAsset.product_name} checked out to ${employee.full_name}`, type: "success" }]);
+        setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset ${selectedAsset.product_name} assigned to ${employee.full_name}`, type: "success" }]);
         // Log activity for asset assigned to employee
         await logActivity(
           'asset_assigned',
@@ -233,29 +235,33 @@ const CheckoutManagement = () => {
 
     if (!selectedAsset || !department) return;
 
-    // Process checkout to department
+    // Process assignment to department
     const newLoan = {
       asset_tag: selectedAsset.asset_tag,
-      department_id: department.id, // Use department_id
+      department_id: department.id,
       checkout_date: new Date().toISOString(),
       expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'active',
     };
-    console.log('New loan object for department:', newLoan);
 
     const { error: loanError } = await supabase.from('loans').insert([newLoan]);
 
     if (loanError) {
-      console.error('Supabase Loan INSERT Error:', loanError); // More specific log
-      setNotifications((prev) => [...prev, { id: Date.now(), message: `Error checking out asset to department (INSERT failed): ${loanError.message}`, type: "error" }]);
+      console.error('Supabase Loan INSERT Error:', loanError);
+      setNotifications((prev) => [...prev, { id: Date.now(), message: `Error assigning asset to department: ${loanError.message}`, type: "error" }]);
     } else {
-      console.log('Loan INSERT successful. Now updating asset status and refetching data...'); // Success log
-      const { error: assetError } = await supabase.from('assets').update({ status: 'checked_out', current_department_id: department.id }).eq('asset_tag', selectedAsset.asset_tag);
+      const { error: assetError } = await supabase
+        .from('assets')
+        .update({ 
+          status: 'In Use', 
+          current_department_id: department.id 
+        })
+        .eq('asset_tag', selectedAsset.asset_tag);
 
       if (assetError) {
         setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
       } else {
-        setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset ${selectedAsset.product_name} checked out to ${department.name}`, type: "success" }]);
+        setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset ${selectedAsset.product_name} assigned to ${department.name}`, type: "success" }]);
         // Log activity for asset assigned to department
         await logActivity(
           'asset_assigned',
@@ -276,48 +282,73 @@ const CheckoutManagement = () => {
     setSelectedDepartment(null);
   };
 
-  const handleCheckIn = (loan) => {
-    setCheckInAsset(loan);
-    setShowCheckInModal(true);
+  const handleReturn = (loan) => {
+    setReturnAsset(loan);
+    setShowReturnModal(true);
   };
 
-  const handleCheckInComplete = async (loanId, condition, notes) => {
-    const { error: loanError } = await supabase
-      .from('loans')
-      .update({
-        status: 'returned',
-        actual_return_date: new Date().toISOString(),
-        notes: notes,
-      })
-      .eq('id', loanId);
+  const handleReturnComplete = async (loanId, condition, notes) => {
+    try {
+      const { error: loanError } = await supabase
+        .from('loans')
+        .update({
+          status: 'returned',
+          actual_return_date: new Date().toISOString(),
+          notes: notes,
+        })
+        .eq('id', loanId);
 
-    if (loanError) {
-      setNotifications((prev) => [...prev, { id: Date.now(), message: `Error checking in asset: ${loanError.message}`, type: "error" }]);
-    } else {
+      if (loanError) throw loanError;
+
       const loan = activeLoans.find((l) => l.id === loanId);
-      const { error: assetError } = await supabase.from('assets').update({ status: 'in_storage', condition: condition, current_department_id: null }).eq('asset_tag', loan.assetId);
-
-      if (assetError) {
-        setNotifications((prev) => [...prev, { id: Date.now(), message: `Error updating asset status: ${assetError.message}`, type: "error" }]);
-      } else {
-        setNotifications((prev) => [...prev, { id: Date.now(), message: `Asset successfully returned`, type: "success" }]);
-        // Log activity for asset check-in
-        await logActivity(
-          'asset_returned',
-          `Asset ${loan.assetName} (${loan.assetId}) checked back into storage`,
-          loan.assetId,
-          userId,
-          { condition: condition, notes: notes }
-        );
-        // Refresh data
-        const [loans, assets] = await Promise.all([fetchActiveLoans(), fetchInStorageAssets()]);
-        setActiveLoans(loans);
-        setInStorageAssets(assets);
+      
+      // 1. Strictly map the condition to the approved status
+      let safeStatus = 'Available'; 
+      if (condition === 'Damaged') {
+        safeStatus = 'In Repair';
+      } else if (condition === 'Broken') {
+        safeStatus = 'Broken';
+      } else if (condition === 'Good') {
+        safeStatus = 'Available';
       }
-    }
 
-    setShowCheckInModal(false);
-    setCheckInAsset(null);
+      console.log("SENDING TO SUPABASE -> Status:", safeStatus);
+
+      // 2. Execute the Supabase update using the mapped status
+      const { error: assetError } = await supabase
+        .from('assets')
+        .update({ 
+          status: safeStatus,  // CRITICAL: Use safeStatus, NOT the raw condition
+          condition: condition,      // Update condition column
+          current_department_id: null 
+        })
+        .eq('asset_tag', loan.assetId);
+
+      if (assetError) throw assetError;
+
+      addNotification('Asset successfully returned', 'success');
+      
+      // Log activity for asset return
+      await logActivity(
+        'asset_returned',
+        `Asset ${loan.assetName} (${loan.assetId}) returned with condition: ${condition}`,
+        loan.assetId,
+        userId,
+        { condition: condition, notes: notes, status: safeStatus }
+      );
+
+      // Refresh data
+      const [loans, assets] = await Promise.all([fetchActiveLoans(), fetchInStorageAssets()]);
+      setActiveLoans(loans);
+      setInStorageAssets(assets);
+
+      setShowReturnModal(false);
+      setReturnAsset(null);
+    } catch (error) {
+      console.error('Return error:', error);
+      addNotification(`Error returning asset: ${error.message}`, 'error');
+      throw error; // Re-throw so the modal can handle it
+    }
   };
 
   const handleBarcodeScanned = async (barcode) => {
@@ -330,15 +361,15 @@ const CheckoutManagement = () => {
       .eq('serial_number', barcode)
       .single();
 
-    if (asset && asset.status === 'in_storage') {
+    if (asset && asset.status === 'Available') {
       handleAssetSelected(asset);
       return;
     }
 
-    if (asset && asset.status !== 'in_storage') {
+    if (asset && asset.status !== 'Available') {
         const loan = activeLoans.find((l) => l.assetId === asset.asset_tag);
         if(loan){
-            handleCheckIn(loan);
+            handleReturn(loan);
             return;
         }
     }
@@ -370,11 +401,11 @@ const CheckoutManagement = () => {
             status: loan.status,
             notes: loan.notes,
         }
-      handleCheckIn(formattedLoan);
+      handleReturn(formattedLoan);
       return;
     }
 
-    setNotifications((prev) => [...prev, { id: Date.now(), message: `No available asset or active loan found with barcode: ${barcode}`, type: "error" }]);
+    setNotifications((prev) => [...prev, { id: Date.now(), message: `No available asset or active assignment found with barcode: ${barcode}`, type: "error" }]);
   };
 
   const handleFilterChange = (newFilters) => {
@@ -404,7 +435,7 @@ const CheckoutManagement = () => {
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Checkout Management</h1>
+          <h1 className="text-2xl font-bold text-foreground">Assignment Management</h1>
           <p className="text-muted-foreground">Manage equipment loans and track asset assignments</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -420,9 +451,9 @@ const CheckoutManagement = () => {
             variant="default"
             iconName="Plus"
             iconPosition="left"
-            onClick={handleStartCheckout}>
+            onClick={handleStartAssignment}>
 
-            New Checkout
+            New Assignment
           </Button>
         </div>
       </div>
@@ -442,16 +473,16 @@ const CheckoutManagement = () => {
         <div className="border-b border-border">
           <nav className="flex space-x-8 px-6">
             <button
-              onClick={() => setActiveTab('active-loans')}
+              onClick={() => setActiveTab('active-assignments')}
               className={`py-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'active-loans' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`
+              activeTab === 'active-assignments' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`
               }>
 
               <span className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold">
                   {activeLoans?.length || 0}
                 </span>
-                Active Loans
+                Active Assignments
               </span>
             </button>
             <button
@@ -472,11 +503,11 @@ const CheckoutManagement = () => {
 
         {/* Tab Content */}
         <div className="p-6">
-          {activeTab === 'active-loans' ?
+          {activeTab === 'active-assignments' ?
           <ActiveLoansPanel
             loans={activeLoans}
             filters={filters}
-            onCheckIn={handleCheckIn}
+            onCheckIn={handleReturn}
             onBulkOperation={handleBulkOperation} /> :
 
 
@@ -537,13 +568,13 @@ const CheckoutManagement = () => {
 
       }
 
-      {showCheckInModal && checkInAsset &&
+      {showReturnModal && returnAsset &&
       <CheckInModal
-        loan={checkInAsset}
-        onCheckIn={handleCheckInComplete}
+        loan={returnAsset}
+        onCheckIn={handleReturnComplete}
         onClose={() => {
-          setShowCheckInModal(false);
-          setCheckInAsset(null);
+          setShowReturnModal(false);
+          setReturnAsset(null);
         }} />
 
       }

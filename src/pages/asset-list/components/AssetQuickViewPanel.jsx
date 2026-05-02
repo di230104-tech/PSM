@@ -7,6 +7,9 @@ import { supabase } from '../../../lib/supabaseClient';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import AppImage from '../../../components/AppImage';
+import PrintableAssetLabel from '../../../components/PrintableAssetLabel';
+
+import { formatAssetStatus } from '../../../utils/formatters';
 
 const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
   const navigate = useNavigate();
@@ -55,50 +58,24 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
   };
 
   const handlePrintQR = () => {
-    const qrElement = document.getElementById('qr-print-container');
-    if (!qrElement) return;
-
-    const printWindow = window.open('', '_blank', 'width=400,height=400');
-    const assetName = asset?.asset_tag || asset?.product_name || 'Asset';
-
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Print QR - ${assetName}</title>
-                <style>
-                    body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-                    .qr-wrapper { text-align: center; }
-                    p { font-weight: bold; margin-top: 15px; font-size: 18px; }
-                </style>
-            </head>
-            <body>
-                <div class="qr-wrapper">
-                    ${qrElement.innerHTML}
-                    <p>${assetName}</p>
-                </div>
-            </body>
-        </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    // Slight delay to ensure SVG/Canvas renders before printing
-    setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-    }, 250);
+    window.print();
   };
 
   const getStatusBadgeClass = (status) => {
     switch (status?.toLowerCase()) {
-      case 'in_storage':
+      case 'available':
         return 'bg-success/10 text-success border-success/20';
-      case 'checked_out':
+      case 'in use':
         return 'bg-primary/10 text-primary border-primary/20';
-      case 'in_repair':
+      case 'in repair':
         return 'bg-warning/10 text-warning border-warning/20';
       case 'broken':
         return 'bg-error/10 text-error border-error/20';
+      case 'written off':
+      case 'written_off':
+        return 'bg-muted/10 text-muted-foreground border-border';
+      case 'lost':
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       default:
         return 'bg-muted text-muted-foreground border-border';
     }
@@ -136,13 +113,16 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Sticker layout for physical printing - only visible during print */}
+          <PrintableAssetLabel asset={asset} />
+
           {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-[100]"
+            className="fixed inset-0 bg-black/50 z-[100] print:hidden"
           />
 
           {/* Panel */}
@@ -151,7 +131,7 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 w-full max-w-md bg-card shadow-xl flex flex-col z-[101] border-l border-border"
+            className="fixed inset-y-0 right-0 w-full max-w-md bg-card shadow-xl flex flex-col z-[101] border-l border-border print:hidden"
           >
             {/* Header (Sticky) */}
             <div className="sticky top-0 z-10 bg-card border-b border-border p-4 flex items-center justify-between">
@@ -192,7 +172,7 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                     {asset?.product_name || 'Unnamed Asset'}
                   </h3>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap ${getStatusBadgeClass(asset?.status)}`}>
-                    {asset?.status?.replace(/_/g, ' ')?.toUpperCase() || 'UNKNOWN'}
+                    {formatAssetStatus(asset?.status)}
                   </span>
                 </div>
                 <div className="flex flex-col text-sm">
@@ -359,17 +339,6 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                 View Full Details
                 <ExternalLink size={16} />
               </Button>
-            </div>
-
-            {/* Hidden QR Code for Printing */}
-            <div id="qr-print-container" style={{ display: 'none' }}>
-              {asset?.asset_tag && (
-                <QRCode 
-                  value={asset.asset_tag} 
-                  size={256}
-                  level="H"
-                />
-              )}
             </div>
           </motion.div>
         </>

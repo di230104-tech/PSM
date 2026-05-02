@@ -10,7 +10,7 @@ import {
   calculateMonthlyRunRate 
 } from '../../../utils/financialUtils';
 
-const DetailsTab = ({ asset, maintenanceHistory = [], tabId, ...props }) => {
+const DetailsTab = ({ asset, assignmentHistory = [], maintenanceHistory = [], tabId, ...props }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -335,6 +335,76 @@ const DetailsTab = ({ asset, maintenanceHistory = [], tabId, ...props }) => {
             <p className="text-muted-foreground italic">No technical specifications recorded for this asset.</p>
           </div>
         )}
+      </div>
+
+      {/* Assignment History */}
+      <div className="mt-12">
+        <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center">
+          <Icon name="History" size={20} className="mr-2 text-primary" />
+          Assignment History
+        </h3>
+        
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
+                <tr>
+                  <th className="px-6 py-4 font-bold">Assigned To</th>
+                  <th className="px-6 py-4 font-bold">Department</th>
+                  <th className="px-6 py-4 font-bold text-center">Assigned Date</th>
+                  <th className="px-6 py-4 font-bold text-center">Return Date</th>
+                  <th className="px-6 py-4 font-bold text-center">Status</th>
+                  <th className="px-6 py-4 font-bold">Return Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {assignmentHistory && assignmentHistory.length > 0 ? (
+                  assignmentHistory.map((loan) => (
+                    <tr key={loan.id} className="hover:bg-muted/10 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-foreground">
+                          {loan.employees?.full_name || loan.departments?.name || 'Unassigned'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground">
+                        {loan.employees?.departments?.name || loan.departments?.name || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-center text-muted-foreground">
+                        {formatDate(loan.checkout_date)}
+                      </td>
+                      <td className="px-6 py-4 text-center text-muted-foreground">
+                        {loan.actual_return_date ? formatDate(loan.actual_return_date) : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                          loan.status === 'active' 
+                            ? 'bg-primary/10 text-primary border-primary/20' 
+                            : 'bg-muted text-muted-foreground border-border'
+                        }`}>
+                          {loan.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground max-w-xs">
+                        <p className="truncate italic" title={loan.notes}>
+                          {loan.notes || '-'}
+                        </p>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-12 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2">
+                        <Icon name="Inbox" size={32} className="opacity-20" />
+                        <p>No assignment history found for this asset.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

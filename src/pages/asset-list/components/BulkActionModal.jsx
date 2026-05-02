@@ -24,11 +24,12 @@ const BulkActionModal = ({
   if (!isOpen) return null;
 
   const statusOptions = [
-    { value: 'checked_out', label: formatAssetStatus('checked_out') },
-    { value: 'in_storage', label: formatAssetStatus('in_storage') },
-    { value: 'in_repair', label: formatAssetStatus('in_repair') },
-    { value: 'retired', label: formatAssetStatus('retired') },
-    { value: 'lost', label: formatAssetStatus('lost') }
+    { value: 'Available', label: formatAssetStatus('Available') },
+    { value: 'In Use', label: formatAssetStatus('In Use') },
+    { value: 'In Repair', label: formatAssetStatus('In Repair') },
+    { value: 'Broken', label: formatAssetStatus('Broken') },
+    { value: 'Written-Off', label: formatAssetStatus('Written-Off') },
+    { value: 'Lost/Stolen', label: formatAssetStatus('Lost/Stolen') }
   ];
 
   const locationOptions = locations.map(loc => ({

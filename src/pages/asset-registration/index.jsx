@@ -261,7 +261,7 @@ const AssetRegistration = () => {
       lifespan_years: formData.lifespan_years ? parseInt(formData.lifespan_years) : null,
       lifespan_months: formData.lifespan_years ? parseInt(formData.lifespan_years) * 12 : null,
       technical_specs: formData.technical_specs || null,
-      status: formData.status || 'in_storage',
+      status: formData.status || 'Available',
     };
 
     try {
@@ -281,7 +281,7 @@ const AssetRegistration = () => {
       } else {
         // --- INSERT ---
         const asset_tag = `ISD-${assetData.category.substring(0,3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        const { data, error } = await supabase.from('assets').insert({ ...assetData, asset_tag, status: 'in_storage' }).select().single();
+        const { data, error } = await supabase.from('assets').insert({ ...assetData, asset_tag, status: 'Available' }).select().single();
         if (error) throw error;
 
         // If this was a draft, delete it

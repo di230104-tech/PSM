@@ -69,6 +69,11 @@ const EditDepartmentModal = ({ department, onClose, onDepartmentUpdated }) => {
             </div>
           )}
 
+          <div className="bg-muted/50 p-3 rounded-lg border border-border">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">System ID</p>
+            <p className="text-sm font-mono text-foreground">{department?.id}</p>
+          </div>
+
           <Input
             label="Department Name"
             type="text"

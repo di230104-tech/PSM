@@ -68,7 +68,7 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
     if (selectedAssets?.length === filteredAssets?.length) {
       setSelectedAssets([]);
     } else {
-      setSelectedAssets(filteredAssets?.map(asset => asset?.id));
+      setSelectedAssets(filteredAssets?.map(asset => asset?.asset_tag));
     }
   };
 
@@ -144,11 +144,11 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
             <Button
               variant="outline"
               size="sm"
-              iconName="Package"
+              iconName="UserPlus"
               iconPosition="left"
               onClick={handleBulkCheckout}
             >
-              Checkout Selected ({selectedAssets?.length})
+              Assign Selected ({selectedAssets?.length})
             </Button>
           )}
 
@@ -180,10 +180,10 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredAssets?.map((asset) => (
             <div
-              key={asset?.id}
+              key={asset?.asset_tag}
               className={cn(
                 "bg-card rounded-lg border border-border p-4 transition-all duration-200 hover:shadow-lg cursor-pointer",
-                selectedAssets?.includes(asset?.id) && "ring-2 ring-primary/20 border-primary/30"
+                selectedAssets?.includes(asset?.asset_tag) && "ring-2 ring-primary/20 border-primary/30"
               )}
               onClick={() => onAssetSelect?.(asset)}
             >
@@ -205,10 +205,10 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
                 <div className="absolute top-2 left-2">
                   <input
                     type="checkbox"
-                    checked={selectedAssets?.includes(asset?.id)}
+                    checked={selectedAssets?.includes(asset?.asset_tag)}
                     onChange={(e) => {
                       e?.stopPropagation();
-                      handleSelectAsset(asset?.id);
+                      handleSelectAsset(asset?.asset_tag);
                     }}
                     onClick={(e) => e?.stopPropagation()}
                     className="w-4 h-4 rounded border border-input bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -250,14 +250,14 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
                   variant="outline"
                   size="sm"
                   fullWidth
-                  iconName="LogOut"
+                  iconName="UserPlus"
                   iconPosition="left"
                   onClick={(e) => {
                     e?.stopPropagation();
                     onAssetSelect?.(asset);
                   }}
                 >
-                  Checkout
+                  Assign Asset
                 </Button>
               </div>
             </div>
@@ -297,10 +297,10 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
           {/* Assets List */}
           {filteredAssets?.map((asset) => (
             <div
-              key={asset?.id}
+              key={asset?.asset_tag}
               className={cn(
                 "bg-card rounded-lg border border-border p-4 transition-all duration-200 hover:shadow-md",
-                selectedAssets?.includes(asset?.id) && "ring-2 ring-primary/20 border-primary/30"
+                selectedAssets?.includes(asset?.asset_tag) && "ring-2 ring-primary/20 border-primary/30"
               )}
             >
               <div className="grid grid-cols-12 gap-4 items-center">
@@ -308,8 +308,8 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
                 <div className="col-span-1">
                   <input
                     type="checkbox"
-                    checked={selectedAssets?.includes(asset?.id)}
-                    onChange={() => handleSelectAsset(asset?.id)}
+                    checked={selectedAssets?.includes(asset?.asset_tag)}
+                    onChange={() => handleSelectAsset(asset?.asset_tag)}
                     className="w-4 h-4 rounded border border-input bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   />
                 </div>
@@ -365,8 +365,9 @@ const CheckoutPanel = ({ assets, filters, onAssetSelect, onBulkOperation }) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    iconName="LogOut"
+                    iconName="UserPlus"
                     onClick={() => onAssetSelect?.(asset)}
+                    title="Assign Asset"
                     className="text-primary hover:text-primary"
                   />
                 </div>

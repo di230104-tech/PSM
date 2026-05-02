@@ -7,15 +7,16 @@ import { formatAssetStatus } from '../../../utils/formatters';
 const AssetHeader = ({ asset, onEdit, onPrintQR, onCheckOut }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'checked_out':
+      case 'in use':
+        return 'bg-primary/10 text-primary border-primary/20';
+      case 'available':
         return 'bg-success/10 text-success border-success/20';
-      case 'in_storage':
-        return 'bg-warning/10 text-warning border-warning/20';
-      case 'in_repair':
+      case 'in repair':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'broken':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'retired':
+      case 'written-off':
+      case 'written off':
         return 'bg-muted text-muted-foreground border-border';
       default:
         return 'bg-accent/10 text-accent border-accent/20';
@@ -95,13 +96,13 @@ const AssetHeader = ({ asset, onEdit, onPrintQR, onCheckOut }) => {
             Print QR Code
           </Button>
           <Button
-            variant={asset?.status === 'checked_out' ? 'secondary' : 'success'}
-            iconName={asset?.status === 'checked_out' ? 'LogIn' : 'LogOut'}
+            variant={asset?.status === 'In Use' ? 'secondary' : 'success'}
+            iconName={asset?.status === 'In Use' ? 'LogIn' : 'LogOut'}
             iconPosition="left"
             onClick={onCheckOut}
             className="w-full sm:w-auto"
           >
-            {asset?.status === 'checked_out' ? 'Check In' : 'Check Out'}
+            {asset?.status === 'In Use' ? 'Check In' : 'Check Out'}
           </Button>
         </div>
       </div>

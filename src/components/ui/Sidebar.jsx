@@ -41,8 +41,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse, user }) => {
       category: 'Asset Management and Workflow'
     },
     {
-    
-      label: 'Checkout Management',
+      label: 'Assignment Management',
       path: '/checkout-management',
       icon: 'UserCheck',
       roles: ['system_admin', 'it_staff'],

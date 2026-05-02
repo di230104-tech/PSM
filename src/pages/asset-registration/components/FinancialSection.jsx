@@ -1,27 +1,26 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import Icon from '../../../components/AppIcon';
+import { formatAssetStatus } from '../../../utils/formatters';
 
 const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }) => {
 
   // Helper class for consistent input styling
   const inputClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
-  const getStatusOptions = (currentStatus) => {
-    switch (currentStatus) {
-      case 'in_storage':
-      case 'checked_out':
-        return ['broken', 'in_repair'];
-      case 'in_repair':
-        return ['in_storage', 'broken', 'retired'];
-      case 'broken':
-        return ['in_storage', 'in_repair', 'retired'];
-      default:
-        return [];
-    }
-  };
+  const allStatusOptions = [
+    'Available',
+    'In Use',
+    'In Repair',
+    'Broken',
+    'Written-Off',
+    'Lost/Stolen'
+  ];
   
-  const statusOptions = asset ? getStatusOptions(asset.status) : [];
+  const statusOptions = allStatusOptions.map(status => ({
+    value: status,
+    label: formatAssetStatus(status)
+  }));
 
   return (
     <div className="bg-card border border-border rounded-lg p-6">
@@ -118,7 +117,7 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
             )}
         </div>
 
-        {isEditMode && asset && statusOptions.length > 0 && (
+        {isEditMode && asset && (
           <div className="space-y-2">
             <label className="text-sm font-medium leading-none">Update Status</label>
             <Controller
@@ -127,9 +126,8 @@ const FinancialSection = ({ control, errors, suppliers = [], isEditMode, asset }
               defaultValue={asset.status}
               render={({ field }) => (
                 <select {...field} className={inputClass}>
-                  <option value={asset.status}>{asset.status}</option>
-                  {statusOptions.map(status => (
-                    <option key={status} value={status}>{status}</option>
+                  {statusOptions.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
               )}

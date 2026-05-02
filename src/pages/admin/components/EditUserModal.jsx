@@ -6,9 +6,11 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { AlertCircle } from 'lucide-react';
 
-const EditUserModal = ({ user, departments, onClose, onUserUpdated }) => {
+const EditUserModal = ({ user, departments: initialDepartments, onClose, onUserUpdated }) => {
   const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm();
   const [error, setError] = useState('');
+  const [departments, setDepartments] = useState(initialDepartments || []);
+  const [isLoadingDepts, setIsLoadingDepts] = useState(false);
 
   // Define allowed roles for registration (should match UserRegistration)
   const roles = [
@@ -16,6 +18,30 @@ const EditUserModal = ({ user, departments, onClose, onUserUpdated }) => {
     { value: 'it_staff', label: 'IT Staff' }, // Assuming IT Staff role
     { value: 'department_pic', label: 'Department PIC' }, // Assuming Department PIC role
   ];
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      if (initialDepartments && initialDepartments.length > 0) return;
+      
+      setIsLoadingDepts(true);
+      try {
+        const { data, error } = await supabase
+          .from('departments')
+          .select('id, name')
+          .order('name');
+        
+        if (error) throw error;
+        setDepartments(data.map(dept => ({ value: dept.id, label: dept.name })));
+      } catch (err) {
+        console.error("Error fetching departments:", err);
+        setError('Failed to load departments');
+      } finally {
+        setIsLoadingDepts(false);
+      }
+    };
+
+    fetchDepartments();
+  }, [initialDepartments]);
 
   useEffect(() => {
     // Populate form with current user data when modal opens
@@ -122,8 +148,9 @@ const EditUserModal = ({ user, departments, onClose, onUserUpdated }) => {
                 {...field}
                 label="Assign Department"
                 options={departments}
-                placeholder="Select a department..."
+                placeholder={isLoadingDepts ? "Loading departments..." : "Select a department..."}
                 error={errors.department_id?.message}
+                disabled={isLoadingDepts}
               />
             )}
           />
@@ -135,7 +162,7 @@ const EditUserModal = ({ user, departments, onClose, onUserUpdated }) => {
             <Button 
               type="submit" 
               loading={isSubmitting} 
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingDepts}
             >
               {isSubmitting ? 'Updating User...' : 'Update User'}
             </Button>

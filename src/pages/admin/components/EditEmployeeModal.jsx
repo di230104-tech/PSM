@@ -6,9 +6,35 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { AlertCircle } from 'lucide-react';
 
-const EditEmployeeModal = ({ employee, departments, onClose, onEmployeeUpdated }) => {
+const EditEmployeeModal = ({ employee, departments: initialDepartments, onClose, onEmployeeUpdated }) => {
   const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm();
   const [error, setError] = useState('');
+  const [departments, setDepartments] = useState(initialDepartments || []);
+  const [isLoadingDepts, setIsLoadingDepts] = useState(false);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      if (initialDepartments && initialDepartments.length > 0) return;
+      
+      setIsLoadingDepts(true);
+      try {
+        const { data, error } = await supabase
+          .from('departments')
+          .select('id, name')
+          .order('name');
+        
+        if (error) throw error;
+        setDepartments(data.map(dept => ({ value: dept.id, label: dept.name })));
+      } catch (err) {
+        console.error("Error fetching departments:", err);
+        setError('Failed to load departments');
+      } finally {
+        setIsLoadingDepts(false);
+      }
+    };
+
+    fetchDepartments();
+  }, [initialDepartments]);
 
   useEffect(() => {
     // Populate form with current employee data when modal opens
@@ -102,8 +128,9 @@ const EditEmployeeModal = ({ employee, departments, onClose, onEmployeeUpdated }
                 {...field}
                 label="Department"
                 options={departments}
-                placeholder="Select a department..."
+                placeholder={isLoadingDepts ? "Loading departments..." : "Select a department..."}
                 error={errors.department_id?.message}
+                disabled={isLoadingDepts}
               />
             )}
           />
@@ -115,7 +142,7 @@ const EditEmployeeModal = ({ employee, departments, onClose, onEmployeeUpdated }
             <Button 
               type="submit" 
               loading={isSubmitting} 
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingDepts}
             >
               {isSubmitting ? 'Updating Employee...' : 'Update Employee'}
             </Button>

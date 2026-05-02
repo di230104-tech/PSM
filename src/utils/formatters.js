@@ -1,17 +1,29 @@
 export const formatAssetStatus = (status) => {
   if (!status) return 'N/A';
-  switch (status.toLowerCase()) {
+  
+  // Normalize for comparison
+  const normalized = status.toLowerCase();
+  
+  switch (normalized) {
     case 'in_storage':
-      return 'In Storage';
+    case 'available':
+      return 'Available';
     case 'checked_out':
-      return 'Asset In Use';
+    case 'in use':
+      return 'In Use';
     case 'in_repair':
+    case 'in repair':
       return 'In Repair';
     case 'retired':
       return 'Retired';
     case 'broken':
       return 'Broken';
+    case 'written off':
+    case 'written_off':
+    case 'written-off':
+      return 'Written-Off';
     case 'lost':
+    case 'lost/stolen':
       return 'Lost/Stolen';
     default:
       return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
