@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { NotificationContainer } from '../../components/ui/NotificationToast';
@@ -13,7 +13,6 @@ import CheckInModal from './components/CheckInModal';
 import CheckoutPanel from './components/CheckoutPanel';
 import DepartmentSearchModal from './components/DepartmentSearchModal';
 import EmployeeSearchModal from './components/EmployeeSearchModal';
-import FilterToolbar from './components/FilterToolbar';
 import StatsCards from './components/StatsCards';
 import { logActivity } from '../../utils/activityLogger'; // Import logActivity
 
@@ -28,19 +27,12 @@ const CheckoutManagement = () => {
   const [showAssignmentTypeSelection, setShowAssignmentTypeSelection] = useState(false);
   const [showDepartmentSearch, setShowDepartmentSearch] = useState(false); // New state for department search modal
   const [selectedAsset, setSelectedAsset] = useState(null);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [selectedDepartment, setSelectedDepartment] = useState(null); // New state for selected department
+  const [selectedEmployee, setSelectedEmployee] = useState('All');
+  const [selectedDepartment, setSelectedDepartment] = useState('All'); // New state for selected department
   const [returnAsset, setReturnAsset] = useState(null);
   const [activeLoans, setActiveLoans] = useState([]);
   const [inStorageAssets, setInStorageAssets] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [filters, setFilters] = useState({
-    employee: '',
-    department: '',
-    category: '',
-    status: 'all',
-    overdue: false
-  });
 
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
@@ -138,6 +130,71 @@ const CheckoutManagement = () => {
       color: "success"
     }
   ];
+
+  const uniqueDepartments = useMemo(() => {
+    const values = activeLoans
+      .map((assignment) => assignment?.assignedTo?.department || (assignment?.assignedTo?.type === 'department' ? assignment?.assignedTo?.name : 'Unassigned'))
+      .filter(Boolean);
+
+    return ['All', ...new Set(values)].sort((a, b) => {
+      if (a === 'All') return -1;
+      if (b === 'All') return 1;
+      return a.localeCompare(b);
+    });
+  }, [activeLoans]);
+
+  const uniqueEmployees = useMemo(() => {
+    const values = activeLoans
+      .map((assignment) => assignment?.assignedTo?.type === 'employee' ? assignment?.assignedTo?.name : 'Unknown')
+      .filter(Boolean);
+
+    return ['All', ...new Set(values)].sort((a, b) => {
+      if (a === 'All') return -1;
+      if (b === 'All') return 1;
+      return a.localeCompare(b);
+    });
+  }, [activeLoans]);
+
+  const filteredAssignments = useMemo(() => {
+    // 1. Create safe fallbacks to prevent null-crashes on refresh
+    const safeDeptFilter = selectedDepartment || 'All';
+    const safeEmpFilter = selectedEmployee || 'All';
+
+    // 2. Run the filter using the safe variables
+    return activeLoans.filter((assignment) => {
+      const assignmentDepartment = assignment?.assignedTo?.department || (assignment?.assignedTo?.type === 'department' ? assignment?.assignedTo?.name : 'Unassigned');
+      const assignmentEmployee = assignment?.assignedTo?.type === 'employee' ? assignment?.assignedTo?.name : 'Unknown';
+
+      const matchDept = safeDeptFilter === 'All' || assignmentDepartment === safeDeptFilter;
+      const matchEmp = safeEmpFilter === 'All' || assignmentEmployee === safeEmpFilter;
+
+      return matchDept && matchEmp;
+    });
+  }, [activeLoans, selectedDepartment, selectedEmployee]);
+
+  const departmentBreakdown = useMemo(() => {
+    const counts = filteredAssignments.reduce((acc, assignment) => {
+      const key = assignment?.assignedTo?.department || (assignment?.assignedTo?.type === 'department' ? assignment?.assignedTo?.name : 'Unassigned');
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [filteredAssignments]);
+
+  const employeeBreakdown = useMemo(() => {
+    const counts = filteredAssignments.reduce((acc, assignment) => {
+      const key = assignment?.assignedTo?.type === 'employee' ? assignment?.assignedTo?.name : 'Unknown';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [filteredAssignments]);
 
 
 
@@ -408,10 +465,6 @@ const CheckoutManagement = () => {
     setNotifications((prev) => [...prev, { id: Date.now(), message: `No available asset or active assignment found with barcode: ${barcode}`, type: "error" }]);
   };
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
-
   const handleBulkOperation = (operation, selectedItems) => {
     const notification = {
       id: Date.now(),
@@ -462,10 +515,95 @@ const CheckoutManagement = () => {
       <StatsCards data={statsData} />
 
       {/* Filter Toolbar */}
-      <FilterToolbar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onBulkOperation={handleBulkOperation} />
+      <div className="bg-card rounded-lg border border-border p-4 space-y-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-foreground mb-1">Filter by Department</label>
+            <select
+              value={selectedDepartment || 'All'}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              {uniqueDepartments.map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-foreground mb-1">Filter by Employee</label>
+            <select
+              value={selectedEmployee || 'All'}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              {uniqueEmployees.map((emp) => (
+                <option key={emp} value={emp}>{emp}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            {(selectedDepartment !== 'All' || selectedEmployee !== 'All') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedDepartment('All');
+                  setSelectedEmployee('All');
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Filtered Assignments</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{filteredAssignments.length}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Departments Represented</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{departmentBreakdown.length}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Employees Represented</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{employeeBreakdown.length}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-border p-4">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Department Breakdown</h3>
+            <div className="space-y-2">
+              {departmentBreakdown.length > 0 ? departmentBreakdown.map((item) => (
+                <div key={item.name} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{item.name}</span>
+                  <span className="font-medium text-foreground">{item.count}</span>
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground">No department data available.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border p-4">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Employee Breakdown</h3>
+            <div className="space-y-2">
+              {employeeBreakdown.length > 0 ? employeeBreakdown.map((item) => (
+                <div key={item.name} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{item.name}</span>
+                  <span className="font-medium text-foreground">{item.count}</span>
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground">No employee data available.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
 
       {/* Tab Navigation */}
@@ -505,15 +643,14 @@ const CheckoutManagement = () => {
         <div className="p-6">
           {activeTab === 'active-assignments' ?
           <ActiveLoansPanel
-            loans={activeLoans}
-            filters={filters}
+            loans={filteredAssignments}
+            totalAssignmentsCount={activeLoans.length}
             onCheckIn={handleReturn}
             onBulkOperation={handleBulkOperation} /> :
 
 
           <CheckoutPanel
             assets={inStorageAssets}
-            filters={filters}
             onAssetSelect={handleAssetSelected}
             onBulkOperation={handleBulkOperation} />
 

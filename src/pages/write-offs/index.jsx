@@ -13,6 +13,7 @@ import { cn } from '../../utils/cn';
 import WriteOffModal from '../../components/WriteOffModal';
 import WriteOffReviewPanel from './components/WriteOffReviewPanel';
 import { useSelector } from 'react-redux';
+import { exportToProfessionalCSV } from '../../utils/csvExport';
 
 const WriteOffsPage = () => {
     const [activeTab, setActiveTab] = useState('pending');
@@ -80,7 +81,7 @@ const WriteOffsPage = () => {
                     .from('assets')
                     .select('*')
                     .eq('is_archived', false)
-                    .in('status', ['broken', 'Expired'])
+                    .or('status.eq.Broken,status.eq.broken,status.eq.Pending Write-Off,status.eq.Pending write-off,status.eq.pending write-off')
                     .order('updated_at', { ascending: false });
 
                 if (error) throw error;
@@ -249,43 +250,38 @@ const WriteOffsPage = () => {
             return;
         }
 
-        let headers, rows;
-        if (activeTab === 'disposed') {
-            headers = ['Asset Tag', 'Product Name', 'Write-Off Date', 'Reason', 'Disposal Method', 'Original Price', 'Justification'];
-            rows = dataToExport.map(asset => [
-                asset.asset_tag,
-                asset.product_name,
-                new Date(asset.write_off_date).toLocaleDateString(),
-                asset.reason,
-                asset.disposal_method,
-                asset.purchase_price,
-                `"${asset.justification.replace(/"/g, '""')}"`
-            ]);
-        } else {
-            headers = ['Asset Tag', 'Product Name', 'Status', 'Purchase Price', 'Purchase Date'];
-            rows = dataToExport.map(asset => [
-                asset.asset_tag,
-                asset.product_name,
-                asset.status,
-                asset.purchase_price,
-                asset.purchase_date
-            ]);
-        }
+        const columns = activeTab === 'disposed'
+            ? [
+                { key: 'asset_tag', label: 'Asset Tag' },
+                { key: 'product_name', label: 'Product Name' },
+                { key: 'write_off_date', label: 'Write-Off Date', value: (asset) => new Date(asset.write_off_date).toLocaleDateString() },
+                { key: 'reason', label: 'Reason' },
+                { key: 'disposal_method', label: 'Disposal Method' },
+                { key: 'purchase_price', label: 'Original Price' },
+                { key: 'justification', label: 'Justification' },
+            ]
+            : [
+                { key: 'asset_tag', label: 'Asset Tag' },
+                { key: 'product_name', label: 'Product Name' },
+                { key: 'status', label: 'Status' },
+                { key: 'purchase_price', label: 'Purchase Price' },
+                { key: 'purchase_date', label: 'Purchase Date' },
+            ];
 
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `Asset_${activeTab}_Export_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        exportToProfessionalCSV({
+            data: dataToExport,
+            reportTitle: activeTab === 'disposed' ? 'Write-Off Disposals Report' : 'Write-Off Queue Report',
+            appliedFilters: {
+                Tab: activeTab,
+                Search: searchQuery || 'None',
+                Reason: reasonFilter || 'All Reasons',
+                Method: methodFilter || 'All Methods',
+                Category: categoryFilter || 'All Categories',
+                DateRange: startDate || endDate ? `${startDate || 'Any'} to ${endDate || 'Any'}` : 'Any',
+            },
+            fileNamePrefix: `Asset_${activeTab}_Export`,
+            columns,
+        });
         addNotification('Export successful', 'success');
     };
 
@@ -534,9 +530,9 @@ const WriteOffsPage = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                                        asset.status === 'broken' ? 'bg-error/10 text-error' : 'bg-warning/10 text-warning'
+                                                        String(asset.status || '').toLowerCase() === 'broken' ? 'bg-error/10 text-error' : 'bg-warning/10 text-warning'
                                                     }`}>
-                                                        {asset.status.toUpperCase()}
+                                                        {asset.status || 'Unknown'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 font-medium">

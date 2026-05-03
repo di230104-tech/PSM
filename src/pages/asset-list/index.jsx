@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
@@ -8,6 +8,7 @@ import { DashboardSkeleton } from '../../components/ui/LoadingState';
 import AssetQuickViewPanel from './components/AssetQuickViewPanel';
 import { NotificationContainer } from '../../components/ui/NotificationToast';
 import { formatAssetStatus } from '../../utils/formatters';
+import { exportToProfessionalCSV } from '../../utils/csvExport';
 import { useSelector } from 'react-redux'; // Import useSelector
 import { logActivity } from '../../utils/activityLogger'; // Import logActivity
 import { FilterToolbar } from './components/FilterToolbar'; // Import FilterToolbar
@@ -62,6 +63,10 @@ const AssetList = () => {
     const handleFilterChange = (newFilters) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
     };
+
+    const filteredAssets = useMemo(() => {
+        return assets;
+    }, [assets]);
 
     const handleSort = (key) => {
         let direction = 'asc';
@@ -184,45 +189,32 @@ const AssetList = () => {
             return;
         }
 
-        const headers = [
-            'Asset Tag',
-            'Model/Name',
-            'Category',
-            'Status',
-            'Location',
-            'Department',
-            'Supplier',
-            'Purchase Date',
-            'Purchase Price',
-            'Serial Number'
-        ];
-
-        const csvRows = assets.map(asset => {
-            return [
-                `"${asset.asset_tag || ''}"`,
-                `"${asset.product_name || ''}"`,
-                `"${asset.category || ''}"`,
-                `"${asset.status || ''}"`,
-                `"${asset.locations?.name || ''}"`,
-                `"${asset.departments?.name || ''}"`,
-                `"${asset.suppliers?.company_name || ''}"`,
-                `"${asset.purchase_date || ''}"`,
-                `"${asset.purchase_price || 0}"`,
-                `"${asset.serial_number || ''}"`
-            ].join(',');
+        exportToProfessionalCSV({
+            data: assets,
+            reportTitle: 'Asset Master Inventory',
+            appliedFilters: {
+                Search: filters.searchQuery || 'None',
+                Category: filters.category || 'All Categories',
+                Status: filters.status || 'All Statuses',
+                Location: filters.location || 'All Locations',
+                Department: filters.department || 'All Departments',
+                Supplier: filters.supplier || 'All Suppliers',
+                PurchaseDate: filters.dateRange.start || filters.dateRange.end ? `${filters.dateRange.start || 'Any'} to ${filters.dateRange.end || 'Any'}` : 'Any',
+            },
+            fileNamePrefix: 'panasonic_assets_export',
+            columns: [
+                { key: 'asset_tag', label: 'Asset Tag' },
+                { key: 'product_name', label: 'Model/Name' },
+                { key: 'category', label: 'Category' },
+                { key: 'status', label: 'Status' },
+                { key: 'locations', label: 'Location', value: (asset) => asset.locations?.name || '' },
+                { key: 'departments', label: 'Department', value: (asset) => asset.departments?.name || '' },
+                { key: 'suppliers', label: 'Supplier', value: (asset) => asset.suppliers?.company_name || '' },
+                { key: 'purchase_date', label: 'Purchase Date' },
+                { key: 'purchase_price', label: 'Purchase Price' },
+                { key: 'serial_number', label: 'Serial Number' },
+            ],
         });
-
-        const csvContent = [headers.join(','), ...csvRows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `panasonic_assets_export_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
         
         addNotification('Export downloaded successfully', 'success');
     };
@@ -289,7 +281,7 @@ const AssetList = () => {
                 <FilterToolbar
                     filters={filters}
                     onFilterChange={handleFilterChange}
-                    totalCount={assets.length}
+                    totalCount={filteredAssets.length}
                     departments={departments}
                     suppliers={suppliers}
                     locations={locations}
@@ -299,15 +291,17 @@ const AssetList = () => {
                 <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
                     {isLoading ? (
                         <div className="p-6"><DashboardSkeleton /></div>
-                    ) : assets.length === 0 ? (
+                    ) : filteredAssets.length === 0 ? (
                         <div className="p-12 text-center text-muted-foreground">
                             <Icon name="Package" size={48} className="mx-auto mb-4 opacity-20" />
                             <p>No assets found.</p>
-                            <p className="text-xs mt-2">Try adjusting your search or add a new asset.</p>
+                            <p className="text-xs mt-2">
+                                {assets.length > 0 ? 'Try adjusting your filters or clear the supplier filter.' : 'Try adjusting your search or add a new asset.'}
+                            </p>
                         </div>
                     ) : (
                         <AssetTable
-                            assets={assets}
+                            assets={filteredAssets}
                             sortConfig={sortConfig}
                             onSort={handleSort}
                             onAssetClick={handleAssetClick}
@@ -318,7 +312,7 @@ const AssetList = () => {
                 </div>
                 
                 <div className="text-xs text-muted-foreground text-center mt-4">
-                    Showing {assets.length} total assets
+                    Showing {filteredAssets.length} total assets
                 </div>
             </div>
             

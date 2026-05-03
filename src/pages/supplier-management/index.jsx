@@ -10,6 +10,7 @@ import SupplierDetailPanel from './components/SupplierDetailPanel';
 import SupplierFormModal from './components/SupplierFormModal';
 import FilterToolbar from './components/FilterToolbar';
 import PerformanceMetrics from './components/PerformanceMetrics';
+import SupplierReliabilityReport from './components/SupplierReliabilityReport';
 
 const SupplierManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +19,7 @@ const SupplierManagement = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
+  const [assets, setAssets] = useState([]);
   const [filteredSuppliers, setFilteredSuppliers] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
@@ -35,15 +37,32 @@ const SupplierManagement = () => {
 
   const fetchSuppliers = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('suppliers').select('*').order('company_name');
-    
-    if (error) {
-      console.error("Error fetching suppliers:", error);
-      addNotification('Failed to load suppliers.', 'error');
-    } else {
-      setSuppliers(data);
+    try {
+      const { data, error } = await supabase.from('suppliers').select('*').order('company_name');
+      
+      if (error) {
+        console.error("Error fetching suppliers:", error);
+        addNotification('Failed to load suppliers.', 'error');
+      } else {
+        setSuppliers(data);
+      }
+
+      // Fetch assets with supplier relation for the reliability report
+      const { data: assetsData, error: assetsError } = await supabase
+        .from('assets')
+        .select(`
+          *,
+          suppliers ( company_name )
+        `);
+      
+      if (assetsError) {
+        console.error("Error fetching assets:", assetsError);
+      } else {
+        setAssets(assetsData);
+      }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [addNotification]);
 
   useEffect(() => {
@@ -153,6 +172,7 @@ const SupplierManagement = () => {
         </div>
       </div>
       <PerformanceMetrics suppliers={suppliers} />
+      <SupplierReliabilityReport assets={assets} />
       <FilterToolbar filters={filters} onFilterChange={handleFilterChange} suppliersCount={filteredSuppliers.length} />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">

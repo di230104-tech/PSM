@@ -314,6 +314,35 @@ const AssetDetails = () => {
     fetchAllData();
   };
 
+  const handleRefurbish = async () => {
+    const confirmRevive = window.confirm("Are you sure you want to mark this broken asset as fully repaired and Available?");
+    if (!confirmRevive) return;
+
+    addNotification('Reviving asset...', 'info');
+    try {
+      const { error } = await supabase
+        .from('assets')
+        .update({ status: 'Available' })
+        .eq('asset_tag', assetData.asset_tag);
+
+      if (error) throw error;
+
+      await logActivity(
+        'asset_refurbished',
+        `Asset ${assetData.product_name} (${assetData.asset_tag}) refurbished and set to Available`,
+        assetData.asset_tag,
+        userId,
+        {}
+      );
+
+      addNotification('Asset successfully refurbished and is now Available!', 'success');
+      fetchAllData();
+    } catch (error) {
+      console.error('Failed to revive asset:', error);
+      addNotification('Failed to refurbish the asset.', 'error');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -365,17 +394,17 @@ const AssetDetails = () => {
           <Button variant="outline" iconName="Printer" onClick={handlePrintQR}>Print QR</Button>
           <Button variant="outline" iconName="Edit" onClick={handleEdit}>Edit Asset</Button>
           
-          {canBeRefurbished() && (
-            <Button 
-              variant="outline" 
-              className="border-success/30 text-success hover:bg-success/10"
-              iconName="Wrench" 
-              onClick={() => setShowRefurbishModal(true)}
+          {/* ONLY show Refurbish if Broken */}
+          {assetData?.status === 'Broken' && (
+            <Button
+              variant="outline"
+              className="border-warning/30 text-warning hover:bg-warning/10"
+              iconName="Wrench"
+              onClick={handleRefurbish}
             >
               Refurbish & Revive
             </Button>
           )}
-
           <Button 
             variant="outline" 
             className={`border-error/30 text-error hover:bg-error/10 ${isWriteOffDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -385,13 +414,27 @@ const AssetDetails = () => {
           >
             Write Off
           </Button>
-          <Button 
-            variant={['In Use', 'overdue'].includes(assetData.status) ? 'default' : 'primary'}
-            iconName={['In Use', 'overdue'].includes(assetData.status) ? 'UserMinus' : 'UserPlus'}
-            onClick={handleStatusAction}
-          >
-            {['In Use', 'overdue'].includes(assetData.status) ? 'Return Asset' : 'Assign Asset'}
-          </Button>
+          {/* ONLY show Assign if Available */}
+          {assetData?.status === 'Available' && (
+            <Button
+              variant="primary"
+              iconName="UserPlus"
+              onClick={() => setShowAssignModal(true)}
+            >
+              Assign Asset
+            </Button>
+          )}
+
+          {/* ONLY show Return if In Use */}
+          {assetData?.status === 'In Use' && (
+            <Button
+              variant="default"
+              iconName="UserMinus"
+              onClick={() => setShowReturnModal(true)}
+            >
+              Return Asset
+            </Button>
+          )}
         </div>
       </div>
 

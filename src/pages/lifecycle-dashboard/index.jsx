@@ -7,10 +7,14 @@ import { NotificationContainer } from '../../components/ui/NotificationToast';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import KPICard from '../dashboard/components/KPICard';
+import { exportToProfessionalCSV } from '../../utils/csvExport';
+import SecurityAuditReport from '../reports/components/SecurityAuditReport';
+import EOLBudgetReport from '../reports/components/EOLBudgetReport';
 
 const LifecycleDashboard = () => {
   const navigate = useNavigate();
   const [assets, setAssets] = useState([]);
+  const [allAssets, setAllAssets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [forecastPeriod, setForecastPeriod] = useState('12_months');
@@ -36,6 +40,7 @@ const LifecycleDashboard = () => {
         }));
 
         setAssets(processedAssets);
+        setAllAssets(data);
       } catch (error) {
         console.error('Error fetching assets:', error);
         addNotification('Failed to load forecast data', 'error');
@@ -137,27 +142,24 @@ const LifecycleDashboard = () => {
       return;
     }
 
-    const headers = ['Asset Tag', 'Product Name', 'Category', 'EOL Date', 'Replacement Cost (RM)'];
-    const csvContent = [
-      headers.join(','),
-      ...expiringAssets.map(asset => [
-        asset.asset_tag,
-        `"${asset.product_name.replace(/"/g, '""')}"`,
-        asset.category,
-        asset.eolDate.toISOString().split('T')[0],
-        asset.purchase_price?.toFixed(2) || '0.00'
-      ].join(','))
-    ].join('\n');
+    exportToProfessionalCSV({
+      data: expiringAssets,
+      reportTitle: 'Lifecycle & Budget Forecast',
+      appliedFilters: {
+        ForecastPeriod: forecastPeriod,
+        StartDate: forecastPeriod === 'custom' ? customStartDate : 'N/A',
+        EndDate: forecastPeriod === 'custom' ? customEndDate : 'N/A',
+      },
+      fileNamePrefix: `lifecycle_forecast_${forecastPeriod}`,
+      columns: [
+        { key: 'asset_tag', label: 'Asset Tag' },
+        { key: 'product_name', label: 'Product Name' },
+        { key: 'category', label: 'Category' },
+        { key: 'eolDate', label: 'EOL Date', value: (asset) => asset.eolDate?.toISOString().split('T')[0] || '' },
+        { key: 'purchase_price', label: 'Replacement Cost (RM)', value: (asset) => asset.purchase_price?.toFixed(2) || '0.00' },
+      ],
+    });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `lifecycle_forecast_${forecastPeriod}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
     addNotification('Forecast exported successfully', 'success');
   };
 
@@ -370,6 +372,12 @@ const LifecycleDashboard = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Reports: Security Audit + EOL Budget Forecast */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SecurityAuditReport assets={allAssets} />
+        <EOLBudgetReport assets={allAssets} />
       </div>
 
       <NotificationContainer

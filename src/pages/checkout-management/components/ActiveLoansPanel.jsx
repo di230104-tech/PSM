@@ -2,33 +2,11 @@ import React, { useState } from 'react';
 import Button from '../../../components/ui/Button';
 import AppIcon from '../../../components/AppIcon';
 
-const ActiveLoansPanel = ({ loans, filters, onCheckIn }) => {
+const ActiveLoansPanel = ({ loans, totalAssignmentsCount, onCheckIn }) => {
   const [sortBy, setSortBy] = useState('checkoutDate');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  // Filter and sort loans
-  const filteredLoans = (loans || [])?.filter(loan => {
-    if (filters?.employee && !(
-      loan?.assignedTo?.name?.toLowerCase()?.includes(filters.employee.toLowerCase()) ||
-      loan?.assignedTo?.email?.toLowerCase()?.includes(filters.employee.toLowerCase())
-    )) {
-      return false;
-    }
-
-    if (filters?.department && loan?.assignedTo?.department?.toLowerCase() !== filters.department.toLowerCase()) {
-      return false;
-    }
-
-    if (filters?.category && loan?.assetCategory?.toLowerCase() !== filters.category.toLowerCase()) {
-      return false;
-    }
-
-    if (filters?.status && filters?.status !== 'all' && loan?.status !== filters.status) {
-      return false;
-    }
-
-    return true;
-  })?.sort((a, b) => {
+  const filteredLoans = [...(loans || [])].sort((a, b) => {
       let aValue = a?.[sortBy];
       let bValue = b?.[sortBy];
 
@@ -90,9 +68,9 @@ const ActiveLoansPanel = ({ loans, filters, onCheckIn }) => {
         <AppIcon name="Package" size={48} className="mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium text-foreground mb-2">No Active Assignments</h3>
         <p className="text-muted-foreground mb-6">
-          {loans?.length ? 'No assignments match your current filters.' : 'All assets are currently in storage.'}
+          {totalAssignmentsCount ? 'No assignments match your current filters.' : 'All assets are currently in storage.'}
         </p>
-        {loans?.length && (
+        {totalAssignmentsCount > 0 && (
           <Button variant="outline">
             Clear Filters
           </Button>
@@ -205,7 +183,7 @@ const ActiveLoansPanel = ({ loans, filters, onCheckIn }) => {
 
       {/* Summary */}
       <div className="text-center text-sm text-muted-foreground pt-4">
-        Showing {filteredLoans?.length} of {loans?.length} active assignments
+        Showing {filteredLoans?.length} active assignments
       </div>
     </div>
   );
