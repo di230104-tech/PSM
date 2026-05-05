@@ -84,14 +84,6 @@ const DetailsTab = ({ asset, assignmentHistory = [], maintenanceHistory = [], ta
                 <span className="font-medium text-foreground">{asset?.category}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Brand</span>
-                <span className="font-medium text-foreground">{asset?.brand || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Model</span>
-                <span className="font-medium text-foreground">{asset?.model || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Serial Number</span>
                 <span className="font-medium text-foreground font-mono">{asset?.serial_number}</span>
               </div>

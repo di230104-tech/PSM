@@ -176,7 +176,6 @@ const AssetQuickViewPanel = ({ isOpen, onClose, asset }) => {
                   </span>
                 </div>
                 <div className="flex flex-col text-sm">
-                  <span className="text-muted-foreground">{asset?.model || 'No model specified'}</span>
                   <button 
                     onClick={handleViewFullDetails}
                     className="text-primary font-medium hover:underline text-left mt-1"
