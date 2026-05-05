@@ -188,20 +188,28 @@ const LifecycleDashboard = () => {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {forecastPeriod === 'custom' && (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none"
-              />
-              <span className="text-muted-foreground text-xs uppercase font-bold">to</span>
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary outline-none"
-              />
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex flex-col min-w-[150px]">
+                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Forecast Start</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none w-full"
+                />
+              </div>
+              <div className="hidden sm:block pb-2.5">
+                <span className="text-gray-300 text-xs font-bold px-1">to</span>
+              </div>
+              <div className="flex flex-col min-w-[150px]">
+                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Forecast End</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none w-full"
+                />
+              </div>
             </div>
           )}
           <select

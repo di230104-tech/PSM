@@ -431,18 +431,20 @@ const WriteOffsPage = () => {
                                 clearable
                             />
                         </div>
-                        <div className="w-full md:w-40">
+                        <div className="flex flex-col flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">From</label>
                             <Input
-                                label="From"
                                 type="date"
+                                className="w-full min-w-[140px]"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                             />
                         </div>
-                        <div className="w-full md:w-40">
+                        <div className="flex flex-col flex-1 min-w-[140px]">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">To</label>
                             <Input
-                                label="To"
                                 type="date"
+                                className="w-full min-w-[140px]"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                             />

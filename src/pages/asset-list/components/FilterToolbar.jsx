@@ -163,21 +163,29 @@ export function FilterToolbar({
           placeholder="Select location"
         />
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2 lg:col-span-1">
           <label className="text-sm font-medium text-foreground">Date Registered</label>
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              type="date"
-              placeholder="Start date"
-              value={localFilters?.dateRange?.start || ''}
-              onChange={(e) => handleDateRangeChange('start', e?.target?.value)}
-            />
-            <Input
-              type="date"
-              placeholder="End date"
-              value={localFilters?.dateRange?.end || ''}
-              onChange={(e) => handleDateRangeChange('end', e?.target?.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col flex-1 min-w-[140px]">
+              <label htmlFor="start-date" className="text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Start Date</label>
+              <Input
+                id="start-date"
+                type="date"
+                className="w-full min-w-[140px]"
+                value={localFilters?.dateRange?.start || ''}
+                onChange={(e) => handleDateRangeChange('start', e?.target?.value)}
+              />
+            </div>
+            <div className="flex flex-col flex-1 min-w-[140px]">
+              <label htmlFor="end-date" className="text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">End Date</label>
+              <Input
+                id="end-date"
+                type="date"
+                className="w-full min-w-[140px]"
+                value={localFilters?.dateRange?.end || ''}
+                onChange={(e) => handleDateRangeChange('end', e?.target?.value)}
+              />
+            </div>
           </div>
         </div>
       </div>
