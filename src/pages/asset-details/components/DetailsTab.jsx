@@ -11,6 +11,17 @@ import {
 } from '../../../utils/financialUtils';
 
 const DetailsTab = ({ asset, assignmentHistory = [], maintenanceHistory = [], tabId, ...props }) => {
+  const formatSafeDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -66,335 +77,314 @@ const DetailsTab = ({ asset, assignmentHistory = [], maintenanceHistory = [], ta
 
   return (
     <div {...props}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Basic Information */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content Area (Left/Top) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Basic Information & Location */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Icon name="Package" size={16} className="text-blue-600" />
+                Asset Information
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Product Name</label>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">{asset?.product_name}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Category</label>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">{asset?.category}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Serial Number</label>
+                  <p className="text-sm font-mono font-bold text-gray-700 mt-0.5">{asset?.serial_number}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Asset Tag</label>
+                  <p className="text-sm font-mono font-bold text-blue-600 mt-0.5">{asset?.asset_tag}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Icon name="MapPin" size={16} className="text-blue-600" />
+                Current Assignment
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Location</label>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">{asset?.location_name || 'Unassigned'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Assigned To</label>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">{asset?.assigned_to_name || 'Unassigned'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Assign Date</label>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">
+                    {asset?.assignment_date ? formatDate(asset?.assignment_date) : 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-tight">Owner Email</label>
+                  <p className="text-sm font-medium text-gray-500 mt-0.5 truncate" title={asset?.assigned_to_email}>
+                    {asset?.assigned_to_email || 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Technical Specifications */}
+          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-6 flex items-center gap-2">
+              <Settings size={18} className="text-blue-600" />
+              Technical Specifications
+            </h3>
+            
+            {asset?.technical_specs && Object.values(asset.technical_specs).some(v => v) ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {asset.technical_specs.processor && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
+                      <Cpu size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Processor</p>
+                      <p className="text-sm font-bold text-gray-900">{asset.technical_specs.processor}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {asset.technical_specs.memory && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
+                      <Database size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Memory</p>
+                      <p className="text-sm font-bold text-gray-900">{asset.technical_specs.memory}</p>
+                    </div>
+                  </div>
+                )}
+
+                {asset.technical_specs.storage && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
+                      <HardDrive size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Storage</p>
+                      <p className="text-sm font-bold text-gray-900">{asset.technical_specs.storage}</p>
+                    </div>
+                  </div>
+                )}
+
+                {asset.technical_specs.os && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
+                      <Globe size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">OS</p>
+                      <p className="text-sm font-bold text-gray-900">{asset.technical_specs.os}</p>
+                    </div>
+                  </div>
+                )}
+
+                {asset.technical_specs.graphics && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
+                      <Monitor size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Graphics</p>
+                      <p className="text-sm font-bold text-gray-900">{asset.technical_specs.graphics}</p>
+                    </div>
+                  </div>
+                )}
+
+                {asset.technical_specs.ports && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
+                      <Icon name="Settings" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Ports</p>
+                      <p className="text-sm font-bold text-gray-900">{asset.technical_specs.ports}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-8 text-center border-2 border-dashed border-gray-100 rounded-xl">
+                <p className="text-sm text-gray-400 italic font-medium">No technical specifications recorded.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Assignment History */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-50 flex items-center gap-2">
+              <Icon name="History" size={18} className="text-blue-600" />
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Assignment History</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-gray-50/50">
+                  <tr>
+                    <th scope="col" className="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">User/Dept</th>
+                    <th scope="col" className="px-6 py-4 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Assigned</th>
+                    <th scope="col" className="px-6 py-4 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Returned</th>
+                    <th scope="col" className="px-6 py-4 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {assignmentHistory && assignmentHistory.length > 0 ? (
+                    assignmentHistory.map((loan) => (
+                      <tr key={loan.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-gray-900">
+                            {loan.employees?.full_name || loan.departments?.name || 'Unassigned'}
+                          </div>
+                          <div className="text-[11px] font-medium text-gray-400 mt-0.5">
+                            {loan.employees?.departments?.name || loan.departments?.name || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-600">
+                          {formatSafeDate(loan.checkout_date) || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                          {loan.actual_return_date 
+                            ? <span className="text-gray-600">{formatSafeDate(loan.actual_return_date)}</span>
+                            : <span className="text-green-600 font-bold text-[10px] uppercase tracking-wider bg-green-50 px-2 py-1 rounded-md border border-green-100">Currently Assigned</span>
+                          }
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                            loan.status === 'active' 
+                              ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                              : 'bg-gray-100 text-gray-500 border-gray-200'
+                          }`}>
+                            {loan.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-12 text-center text-gray-400 font-medium italic">
+                        No previous assignments found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar (Right/Bottom) */}
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-              <Icon name="Package" size={20} className="mr-2" />
-              Basic Information
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Asset Name</span>
-                <span className="font-medium text-foreground">{asset?.product_name}</span>
+          {/* Financial Overview */}
+          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                <Icon name="DollarSign" size={16} className="text-blue-600" />
+                Financials
+              </h3>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${healthStatus.color}`}>
+                <Icon name={healthStatus.icon} size={12} />
+                {healthStatus.status}
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Category</span>
-                <span className="font-medium text-foreground">{asset?.category}</span>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                <span className="text-xs font-bold text-gray-400 uppercase">Purchase Price</span>
+                <span className="text-sm font-bold text-gray-900">{formatCurrency(asset?.purchase_price)}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Serial Number</span>
-                <span className="font-medium text-foreground font-mono">{asset?.serial_number}</span>
+              <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                <span className="text-xs font-bold text-gray-400 uppercase">Current Value</span>
+                <span className="text-sm font-bold text-green-600">{formatCurrency(currentValue)}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Asset Tag</span>
-                <span className="font-medium text-foreground font-mono">{asset?.asset_tag}</span>
+              <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                <span className="text-xs font-bold text-gray-400 uppercase">Maintenance</span>
+                <span className="text-sm font-bold text-red-600">{formatCurrency(totalMaintenanceCost)}</span>
+              </div>
+              <div className="pt-2">
+                <div className="flex justify-between items-center bg-blue-50/50 p-3 rounded-xl border border-blue-100/50">
+                  <span className="text-xs font-bold text-blue-900 uppercase">Total TCO</span>
+                  <span className="text-lg font-black text-blue-600">{formatCurrency(tco)}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Location & Assignment */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-              <Icon name="MapPin" size={20} className="mr-2" />
-              Location & Assignment
+          {/* Lifecycle & Warranty */}
+          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-6 flex items-center gap-2">
+              <Icon name="RefreshCw" size={16} className="text-blue-600" />
+              Lifecycle
             </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Current Location</span>
-                <span className="font-medium text-foreground">{asset?.location_name || 'Unassigned'}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Assigned To</span>
-                <span className="font-medium text-foreground">{asset?.assigned_to_name || 'Unassigned'}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Assignment Date</span>
-                <span className="font-medium text-foreground">
-                  {asset?.assignment_date ? formatDate(asset?.assignment_date) : 'N/A'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Lifecycle Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-              <Icon name="RefreshCw" size={20} className="mr-2" />
-              Lifecycle Information
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">EOL Status</span>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${eolStatus.color}`}>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-gray-400 uppercase">EOL Status</span>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${eolStatus.color}`}>
                   {eolStatus.status}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Expected EOL Date</span>
-                <span className="font-medium text-foreground">
+              <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">Purchase Date</span>
+                <span className="text-sm font-bold text-gray-900">{formatDate(asset?.purchase_date)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">EOL Date</span>
+                <span className="text-sm font-bold text-gray-900">
                   {eolDate ? formatDate(eolDate.toISOString().split('T')[0]) : 'N/A'}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Lifespan</span>
-                <span className="font-medium text-foreground">
+              <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">Lifespan</span>
+                <span className="text-sm font-bold text-gray-900">
                   {asset?.lifespan_months ? `${asset.lifespan_months} Months` : (asset?.lifespan_years ? `${asset.lifespan_years} Years` : 'N/A')}
                 </span>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Financial Information */}
-        <div className="space-y-6">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground flex items-center">
-                <Icon name="DollarSign" size={20} className="mr-2" />
-                Financial Information
-              </h3>
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${healthStatus.color}`}>
-                <Icon name={healthStatus.icon} size={14} />
-                {healthStatus.status}
-              </div>
-            </div>
-            
-            <div className="space-y-3 bg-muted/20 p-4 rounded-lg border border-border/50">
-              <div className="flex justify-between py-2 border-b border-border/50">
-                <span className="text-muted-foreground">Purchase Price</span>
-                <span className="font-medium text-foreground">{formatCurrency(asset?.purchase_price)}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border/50">
-                <span className="text-muted-foreground">Maintenance Cost</span>
-                <span className="font-medium text-error">{formatCurrency(totalMaintenanceCost)}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border/50">
-                <span className="text-muted-foreground font-bold text-foreground">Total Cost (TCO)</span>
-                <span className="font-bold text-foreground text-lg">{formatCurrency(tco)}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border/50">
-                <span className="text-muted-foreground">Monthly Run Rate</span>
-                <span className="font-medium text-foreground">{formatCurrency(monthlyRunRate)} / month</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground font-medium">Estimated Current Value</span>
-                <span className="font-medium text-success">{formatCurrency(currentValue)}</span>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-3 px-1">
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Purchase Date</span>
-                <span className="font-medium text-foreground">{formatDate(asset?.purchase_date)}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Supplier</span>
-                <span className="font-medium text-foreground">{asset?.supplier_name || 'N/A'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Warranty Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-              <Icon name="Shield" size={20} className="mr-2" />
-              Warranty Information
+          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-6 flex items-center gap-2">
+              <Icon name="Shield" size={16} className="text-blue-600" />
+              Warranty
             </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Warranty Status</span>
-                <span className={`font-medium ${warrantyInfo?.color}`}>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-gray-400 uppercase">Status</span>
+                <span className={`text-xs font-bold ${warrantyInfo?.color}`}>
                   {warrantyInfo?.status}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Warranty Expiry</span>
-                <span className="font-medium text-foreground">
+              <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">Expiry</span>
+                <span className="text-sm font-bold text-gray-900">
                   {warrantyInfo?.expiryDate ? formatDate(warrantyInfo.expiryDate.toISOString().split('T')[0]) : 'N/A'}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Days Remaining</span>
-                <span className={`font-medium ${warrantyInfo?.color}`}>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">Timeline</span>
+                <span className={`text-xs font-bold ${warrantyInfo?.color}`}>
                   {warrantyInfo?.status === 'Expired' 
-                    ? `Expired ${warrantyInfo?.days} days ago`
-                    : warrantyInfo?.status === 'No Warranty' ? 'N/A' : `${warrantyInfo?.days} days`
+                    ? `Expired ${warrantyInfo?.days}d ago`
+                    : warrantyInfo?.status === 'No Warranty' ? 'N/A' : `${warrantyInfo?.days} days left`
                   }
                 </span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Technical Specifications */}
-      <div className="mt-12">
-        <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center">
-          <Settings size={20} className="mr-2 text-primary" />
-          Technical Specifications
-        </h3>
-        
-        {asset?.technical_specs && Object.values(asset.technical_specs).some(v => v) ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {asset.technical_specs.processor && (
-              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
-                <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                  <Cpu size={24} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Processor</p>
-                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.processor}</p>
-                </div>
-              </div>
-            )}
-            
-            {asset.technical_specs.memory && (
-              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
-                <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                  <Database size={24} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Memory (RAM)</p>
-                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.memory}</p>
-                </div>
-              </div>
-            )}
-
-            {asset.technical_specs.storage && (
-              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
-                <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                  <HardDrive size={24} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Storage</p>
-                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.storage}</p>
-                </div>
-              </div>
-            )}
-
-            {asset.technical_specs.graphics && (
-              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
-                <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                  <Monitor size={24} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Graphics</p>
-                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.graphics}</p>
-                </div>
-              </div>
-            )}
-
-            {asset.technical_specs.os && (
-              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
-                <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                  <Globe size={24} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">OS</p>
-                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.os}</p>
-                </div>
-              </div>
-            )}
-
-            {asset.technical_specs.network_card && (
-              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4">
-                <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                  <Network size={24} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Network</p>
-                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.network_card}</p>
-                </div>
-              </div>
-            )}
-
-            {asset.technical_specs.ports && (
-              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl flex items-center gap-4 md:col-span-2 lg:col-span-2">
-                <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                  <Icon name="Settings" size={24} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Ports</p>
-                  <p className="text-sm font-semibold text-foreground">{asset.technical_specs.ports}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="p-8 border border-dashed border-border rounded-xl text-center">
-            <p className="text-muted-foreground italic">No technical specifications recorded for this asset.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Assignment History */}
-      <div className="mt-12">
-        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
-          <Icon name="History" size={20} className="mr-2 text-blue-600" />
-          Assignment History
-        </h3>
-        
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned To</th>
-                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
-                  <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned Date</th>
-                  <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Return Date</th>
-                  <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Return Notes</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {assignmentHistory && assignmentHistory.length > 0 ? (
-                  assignmentHistory.map((loan) => (
-                    <tr key={loan.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-900">
-                          {loan.employees?.full_name || loan.departments?.name || 'Unassigned'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {loan.employees?.departments?.name || loan.departments?.name || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                        {formatDate(loan.checkout_date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                        {loan.actual_return_date ? formatDate(loan.actual_return_date) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${
-                          loan.status === 'active' 
-                            ? 'bg-blue-50 text-blue-700 border-blue-100' 
-                            : 'bg-gray-100 text-gray-600 border-gray-200'
-                        }`}>
-                          {loan.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
-                        <p className="truncate italic" title={loan.notes}>
-                          {loan.notes || '-'}
-                        </p>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
-                      <div className="flex flex-col items-center gap-2">
-                        <Icon name="Inbox" size={32} className="opacity-20" />
-                        <p className="text-sm font-medium">No assignment history found for this asset.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
       </div>

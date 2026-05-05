@@ -193,7 +193,10 @@ const AssetDetails = () => {
   const isWriteOffDisabled = () => {
     if (!assetData) return true;
     
-    // Rule: status === 'Broken' OR EOL passed
+    // Explicit Rule: Active assets cannot be written off
+    if (assetData.status === 'In Use') return true;
+    
+    // Existing Rule: status === 'Broken' OR EOL passed
     const isBroken = assetData.status === 'Broken';
     const eolDate = calculateEOLDate(assetData.purchase_date, assetData.lifespan_months || (assetData.lifespan_years * 12));
     const eolStatus = getEOLStatus(eolDate);
@@ -215,6 +218,7 @@ const AssetDetails = () => {
 
   const getWriteOffTooltip = () => {
     if (!assetData) return '';
+    if (assetData.status === 'In Use') return 'Asset must be returned before write-off';
     if (!isWriteOffDisabled()) return 'Decommission this asset from inventory';
     return 'Only broken or expired (EOL) assets can be written off';
   };
@@ -363,102 +367,103 @@ const AssetDetails = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
       {/* Breadcrumb Navigation */}
-      <Breadcrumb asset={assetData} />
+      <div className="px-1">
+        <Breadcrumb asset={assetData} />
+      </div>
 
       {/* Asset Title Row / Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 border border-blue-100 shadow-sm">
             <Icon name="Package" size={32} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{assetData.product_name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                {assetData.asset_tag}
-              </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                assetData.status === 'Available' ? 'bg-success/10 text-success border-success/20' :
-                assetData.status === 'In Use' ? 'bg-primary/10 text-primary border-primary/20' :
-                'bg-muted text-muted-foreground border-border'
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">{assetData.product_name}</h1>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
+                assetData.status === 'Available' ? 'bg-green-50 text-green-700 border-green-200' :
+                assetData.status === 'In Use' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                'bg-gray-50 text-gray-600 border-gray-200'
               }`}>
-                {assetData.status?.replace(/_/g, ' ')?.toUpperCase()}
+                {assetData.status?.replace(/_/g, ' ')}
               </span>
             </div>
+            <p className="text-gray-500 mt-1 font-medium flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wider text-gray-400">Asset Tag:</span>
+              <span className="font-mono text-gray-700">{assetData.asset_tag}</span>
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" iconName="Printer" onClick={handlePrintQR}>Print QR</Button>
-          <Button variant="outline" iconName="Edit" onClick={handleEdit}>Edit Asset</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" iconName="Printer" onClick={handlePrintQR} className="rounded-lg">Print QR</Button>
+          <Button variant="outline" iconName="Edit" onClick={handleEdit} className="rounded-lg">Edit Asset</Button>
           
-          {/* ONLY show Refurbish if Broken */}
           {assetData?.status === 'Broken' && (
             <Button
               variant="outline"
-              className="border-warning/30 text-warning hover:bg-warning/10"
+              className="border-amber-200 text-amber-700 hover:bg-amber-50 rounded-lg"
               iconName="Wrench"
               onClick={handleRefurbish}
             >
-              Refurbish & Revive
+              Refurbish
             </Button>
           )}
           <Button 
             variant="outline" 
-            className={`border-error/30 text-error hover:bg-error/10 ${isWriteOffDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`border-red-200 text-red-600 hover:bg-red-50 rounded-lg ${isWriteOffDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
             iconName="Trash2" 
             onClick={() => !isWriteOffDisabled() && setShowWriteOffModal(true)}
             title={getWriteOffTooltip()}
           >
             Write Off
           </Button>
-          {/* ONLY show Assign if Available */}
-          {assetData?.status === 'Available' && (
+
+          {assetData?.status === 'Available' ? (
             <Button
               variant="primary"
               iconName="UserPlus"
               onClick={() => setShowAssignModal(true)}
+              className="rounded-lg shadow-lg shadow-blue-500/20"
             >
               Assign Asset
             </Button>
-          )}
-
-          {/* ONLY show Return if In Use */}
-          {assetData?.status === 'In Use' && (
+          ) : assetData?.status === 'In Use' ? (
             <Button
               variant="default"
               iconName="UserMinus"
               onClick={() => setShowReturnModal(true)}
+              className="rounded-lg"
             >
               Return Asset
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 
       {/* Tabbed Interface */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Tab Navigation Bar */}
-        <div className="border-b border-border bg-muted/30">
-          <nav className="flex overflow-x-auto">
+        <div className="border-b border-gray-100 bg-gray-50/50">
+          <nav className="flex overflow-x-auto no-scrollbar">
             {[
-              { id: 'details', label: 'Details', icon: 'Info' },
-              { id: 'maintenance', label: 'Maintenance History', icon: 'Wrench' },
+              { id: 'details', label: 'Overview', icon: 'Info' },
+              { id: 'maintenance', label: 'Maintenance', icon: 'Wrench' },
               { id: 'attachments', label: 'Attachments', icon: 'Paperclip' },
-              { id: 'audit', label: 'Audit Trail', icon: 'History' }
+              { id: 'audit', label: 'History', icon: 'History' }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-all duration-200 whitespace-nowrap ${
+                className={`flex items-center gap-2 px-8 py-5 text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap ${
                   activeTab === tab.id 
-                    ? 'border-primary text-primary bg-background' 
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    ? 'border-blue-600 text-blue-600 bg-white' 
+                    : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
                 }`}
               >
-                <Icon name={tab.icon} size={16} />
+                <Icon name={tab.icon} size={18} className={activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'} />
                 {tab.label}
               </button>
             ))}
@@ -466,23 +471,25 @@ const AssetDetails = () => {
         </div>
 
         {/* Tab Content Area */}
-        <div className="p-6">
-          {activeTab === 'details' && <DetailsTab asset={assetData} assignmentHistory={assignmentHistory} maintenanceHistory={maintenanceData} />}
-          {activeTab === 'maintenance' && (
-            <MaintenanceTab 
-              assetTag={asset_tag} 
-              maintenanceHistory={maintenanceData} 
-              onSuccess={handleMaintenanceSuccess} 
-            />
-          )}
-          {activeTab === 'attachments' && (
-            <AttachmentsTab 
-              assetTag={asset_tag}
-              attachments={attachmentsData} 
-              onSuccess={() => handleMaintenanceSuccess('Attachments updated successfully')}
-            />
-          )}
-          {activeTab === 'audit' && <AuditTab auditTrail={auditData} />}
+        <div className="p-0">
+          <div className="p-6 md:p-8">
+            {activeTab === 'details' && <DetailsTab asset={assetData} assignmentHistory={assignmentHistory} maintenanceHistory={maintenanceData} />}
+            {activeTab === 'maintenance' && (
+              <MaintenanceTab 
+                assetTag={asset_tag} 
+                maintenanceHistory={maintenanceData} 
+                onSuccess={handleMaintenanceSuccess} 
+              />
+            )}
+            {activeTab === 'attachments' && (
+              <AttachmentsTab 
+                assetTag={asset_tag}
+                attachments={attachmentsData} 
+                onSuccess={() => handleMaintenanceSuccess('Attachments updated successfully')}
+              />
+            )}
+            {activeTab === 'audit' && <AuditTab auditTrail={auditData} />}
+          </div>
         </div>
       </div>
 
