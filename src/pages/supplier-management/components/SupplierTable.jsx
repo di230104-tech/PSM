@@ -91,15 +91,15 @@ const SupplierTable = ({ suppliers, selectedSupplier, onSupplierSelect, onSuppli
   }
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="text-left p-4 font-medium text-muted-foreground">
+              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                 <button
                   onClick={() => handleSort('company_name')}
-                  className="flex items-center gap-2 hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 hover:text-gray-700 transition-colors"
                 >
                   Company
                   {sortConfig?.key === 'company_name' && (
@@ -109,13 +109,13 @@ const SupplierTable = ({ suppliers, selectedSupplier, onSupplierSelect, onSuppli
                   )}
                 </button>
               </th>
-              <th className="text-left p-4 font-medium text-muted-foreground">
+              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                 Contact Person
               </th>
-              <th className="text-left p-4 font-medium text-muted-foreground">
+              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                 <button
                   onClick={() => handleSort('status')}
-                  className="flex items-center gap-2 hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 hover:text-gray-700 transition-colors"
                 >
                   Status
                   {sortConfig?.key === 'status' && (
@@ -125,10 +125,10 @@ const SupplierTable = ({ suppliers, selectedSupplier, onSupplierSelect, onSuppli
                   )}
                 </button>
               </th>
-              <th className="text-left p-4 font-medium text-muted-foreground">
+              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                 <button
                   onClick={() => handleSort('rating')}
-                  className="flex items-center gap-2 hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 hover:text-gray-700 transition-colors"
                 >
                   Rating
                   {sortConfig?.key === 'rating' && (
@@ -138,10 +138,10 @@ const SupplierTable = ({ suppliers, selectedSupplier, onSupplierSelect, onSuppli
                   )}
                 </button>
               </th>
-              <th className="text-left p-4 font-medium text-muted-foreground">
+              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                 <button
                   onClick={() => handleSort('total_value')}
-                  className="flex items-center gap-2 hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 hover:text-gray-700 transition-colors"
                 >
                   Total Value
                   {sortConfig?.key === 'total_value' && (
@@ -151,83 +151,83 @@ const SupplierTable = ({ suppliers, selectedSupplier, onSupplierSelect, onSuppli
                   )}
                 </button>
               </th>
-              <th className="text-center p-4 font-medium text-muted-foreground">
+              <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-100">
             {sortedSuppliers?.map((supplier) => (
               <tr
                 key={supplier?.id}
                 className={cn(
-                  "border-t hover:bg-muted/50 cursor-pointer transition-colors",
-                  selectedSupplier?.id === supplier?.id && "bg-muted/50"
+                  "hover:bg-gray-50/80 transition-colors cursor-pointer group",
+                  selectedSupplier?.id === supplier?.id && "bg-blue-50/50"
                 )}
                 onClick={() => onSupplierSelect(supplier)}
               >
-                <td className="p-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    {supplier?.image_url && (
+                    {supplier?.image_url ? (
                       <img
                         src={supplier?.image_url}
-                        alt={`${supplier?.company_name} building`}
-                        className="w-10 h-10 rounded-lg object-cover"
+                        alt=""
+                        className="w-10 h-10 rounded-lg object-cover border border-gray-100"
                       />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                        <Globe className="w-5 h-5 text-gray-400" />
+                      </div>
                     )}
                     <div>
-                      <div className="font-medium text-foreground flex items-center gap-2">
+                      <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
                         {supplier?.company_name}
                         {supplier?.preferred_vendor && (
-                          <span className="w-2 h-2 bg-primary rounded-full" title="Preferred Vendor" />
+                          <div className="w-2 h-2 bg-blue-600 rounded-full" title="Preferred Vendor" />
                         )}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div>
-                    <div className="font-medium text-foreground">{supplier?.contact_person}</div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="text-sm font-bold text-gray-900">{supplier?.contact_person}</div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 mt-0.5">
                       <Mail className="w-3 h-3" />
                       {supplier?.email}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="w-3 h-3" />
-                      {supplier?.phone}
-                    </div>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={cn(
-                      "inline-flex px-2 py-1 rounded-md text-xs font-medium border capitalize",
+                      "inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize",
                       getStatusColor(supplier?.status)
                     )}
                   >
                     {supplier?.status}
                   </span>
                 </td>
-                <td className="p-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   {renderRating(supplier?.rating)}
                 </td>
-                <td className="p-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div>
-                    <div className="font-medium text-foreground">
+                    <div className="text-sm font-bold text-gray-900">
                       {formatCurrency(supplier?.total_value)}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs text-gray-400 font-medium">
                       {supplier?.total_orders} orders
                     </div>
                   </div>
                 </td>
-                <td className="p-4" onClick={(e) => e?.stopPropagation()}>
-                  <div className="flex items-center justify-center gap-2">
+                <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e?.stopPropagation()}>
+                  <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => onSupplierEdit(supplier)}
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -235,7 +235,7 @@ const SupplierTable = ({ suppliers, selectedSupplier, onSupplierSelect, onSuppli
                       variant="ghost"
                       size="icon"
                       onClick={() => onSupplierDelete(supplier?.id)}
-                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

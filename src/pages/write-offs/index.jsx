@@ -466,7 +466,7 @@ const WriteOffsPage = () => {
             </div>
 
             {/* Content Tables */}
-            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden min-h-[400px]">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-h-[400px]">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-[400px]">
                         <LoadingSpinner size="lg" />
@@ -474,30 +474,30 @@ const WriteOffsPage = () => {
                 ) : (
                     <div className="overflow-x-auto">
                         {activeTab === 'pending' ? (
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/50 border-b border-border">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-4 w-12">
+                                        <th scope="col" className="px-6 py-4 w-12 text-left">
                                             <Checkbox 
                                                 checked={filteredPending.length > 0 && selectedAssetIds.length === filteredPending.length}
                                                 indeterminate={selectedAssetIds.length > 0 && selectedAssetIds.length < filteredPending.length}
                                                 onChange={toggleSelectAll}
                                             />
                                         </th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Asset Tag</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Product Name</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Category</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Status</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Purchase Price</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground text-center">Actions</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Asset Tag</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product Name</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Purchase Price</th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border">
+                                <tbody className="bg-white divide-y divide-gray-100">
                                     {filteredPending.length === 0 ? (
                                         <tr>
-                                            <td colSpan="7" className="px-6 py-12 text-center text-muted-foreground">
+                                            <td colSpan="7" className="px-6 py-12 text-center text-gray-400">
                                                 <Icon name="Inbox" size={48} className="mx-auto mb-4 opacity-20" />
-                                                <p>No assets pending write-off.</p>
+                                                <p className="text-sm font-medium">No assets pending write-off.</p>
                                             </td>
                                         </tr>
                                     ) : (
@@ -505,12 +505,12 @@ const WriteOffsPage = () => {
                                             <tr 
                                                 key={asset.asset_tag} 
                                                 className={cn(
-                                                    "hover:bg-muted/30 transition-colors cursor-pointer",
-                                                    (selectedAssetIds.includes(asset.asset_tag) || reviewAsset?.asset_tag === asset.asset_tag) && "bg-primary/5"
+                                                    "hover:bg-gray-50/80 transition-colors cursor-pointer group",
+                                                    (selectedAssetIds.includes(asset.asset_tag) || reviewAsset?.asset_tag === asset.asset_tag) && "bg-blue-50/50"
                                                 )}
                                                 onClick={() => handleReviewAsset(asset)}
                                             >
-                                                <td className="px-6 py-4" onClick={(e) => {
+                                                <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => {
                                                     e.stopPropagation();
                                                     toggleSelectRow(asset.asset_tag);
                                                 }}>
@@ -519,30 +519,34 @@ const WriteOffsPage = () => {
                                                         onChange={() => toggleSelectRow(asset.asset_tag)}
                                                     />
                                                 </td>
-                                                <td className="px-6 py-4 font-mono font-medium text-primary">
-                                                    {asset.asset_tag}
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-bold text-blue-600 group-hover:underline">
+                                                        {asset.asset_tag}
+                                                    </div>
                                                 </td>
-                                                <td className="px-6 py-4 font-medium text-foreground">
-                                                    {asset.product_name}
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-bold text-gray-900">{asset.product_name}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-muted-foreground">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     {asset.category}
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                                        String(asset.status || '').toLowerCase() === 'broken' ? 'bg-error/10 text-error' : 'bg-warning/10 text-warning'
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                                                        String(asset.status || '').toLowerCase() === 'broken' 
+                                                        ? 'bg-red-50 text-red-700 border-red-100' 
+                                                        : 'bg-amber-50 text-amber-700 border-amber-100'
                                                     }`}>
                                                         {asset.status || 'Unknown'}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 font-medium">
+                                                <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900">
                                                     {formatCurrency(asset.purchase_price)}
                                                 </td>
-                                                <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
                                                     <Button 
                                                         size="sm" 
                                                         variant="ghost" 
-                                                        className="text-error hover:bg-error/10"
+                                                        className="text-red-600 hover:bg-red-50 font-bold text-xs"
                                                         onClick={() => handleProcessDisposal(asset)}
                                                     >
                                                         Process Disposal
@@ -554,20 +558,21 @@ const WriteOffsPage = () => {
                                 </tbody>
                             </table>
                         ) : (
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/50 border-b border-border">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Asset Tag</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Product Name</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Asset Tag</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product Name</th>
                                         <th 
+                                            scope="col"
                                             className={cn(
-                                                "px-6 py-4 font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors select-none group",
+                                                "px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 transition-colors select-none group",
                                                 "flex items-center gap-1"
                                             )}
                                             onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
                                         >
                                             Write-Off Date
-                                            <div className="text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <div className="text-gray-400 group-hover:text-gray-600 transition-opacity">
                                                 {sortOrder === 'desc' ? (
                                                     <Icon name="ChevronDown" size={14} />
                                                 ) : (
@@ -575,17 +580,17 @@ const WriteOffsPage = () => {
                                                 )}
                                             </div>
                                         </th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Reason</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground">Method</th>
-                                        <th className="px-6 py-4 font-semibold text-foreground text-right">Original Value</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reason</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Method</th>
+                                        <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Original Value</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border">
+                                <tbody className="bg-white divide-y divide-gray-100">
                                     {filteredDisposed.length === 0 ? (
                                         <tr>
-                                            <td colSpan="6" className="px-6 py-12 text-center text-muted-foreground">
+                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
                                                 <Icon name="Inbox" size={48} className="mx-auto mb-4 opacity-20" />
-                                                <p>
+                                                <p className="text-sm font-medium">
                                                     {(startDate || endDate) 
                                                         ? "No assets were disposed of during this date range." 
                                                         : "No disposal records found."}
@@ -594,25 +599,27 @@ const WriteOffsPage = () => {
                                         </tr>
                                     ) : (
                                         filteredDisposed.map((asset) => (
-                                            <tr key={asset.asset_tag} className="hover:bg-muted/30 transition-colors">
-                                                <td className="px-6 py-4 font-mono font-medium text-primary">
-                                                    {asset.asset_tag}
+                                            <tr key={asset.asset_tag} className="hover:bg-gray-50/80 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-bold text-blue-600">
+                                                        {asset.asset_tag}
+                                                    </div>
                                                 </td>
-                                                <td className="px-6 py-4 font-medium text-foreground">
-                                                    {asset.product_name}
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-bold text-gray-900">{asset.product_name}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-muted-foreground">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {new Date(asset.write_off_date).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 rounded bg-muted text-xs font-medium">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700 border border-gray-200">
                                                         {asset.reason}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-muted-foreground">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     {asset.disposal_method}
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-medium">
+                                                <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-gray-900">
                                                     {formatCurrency(asset.purchase_price)}
                                                 </td>
                                             </tr>

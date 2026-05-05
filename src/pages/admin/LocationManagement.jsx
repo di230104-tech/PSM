@@ -99,45 +99,51 @@ const LocationManagement = () => {
           </form>
         </div>
 
-        <div className="md:col-span-2 bg-card p-6 rounded-lg border shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Existing Locations</h2>
+        <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">Existing Locations</h2>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Name</th>
-                  <th scope="col" className="px-6 py-3">Created At</th>
-                  <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created At</th>
+                  <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {locations.map((loc) => (
-                  <tr key={loc.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-6 py-4 font-medium text-foreground">{loc.name}</td>
-                    <td className="px-6 py-4 text-muted-foreground">{new Date(loc.created_at).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-primary"
-                        onClick={() => {
-                          setEditingLocation(loc);
-                          setShowEditLocationModal(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => {
-                          setLocationToDelete(loc);
-                          setShowDeleteConfirmModal(true);
-                        }}
-                      >
-                        Delete
-                      </Button>
+                  <tr key={loc.id} className="hover:bg-gray-50/80 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-gray-900">{loc.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loc.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:bg-blue-50"
+                          onClick={() => {
+                            setEditingLocation(loc);
+                            setShowEditLocationModal(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            setLocationToDelete(loc);
+                            setShowDeleteConfirmModal(true);
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -145,8 +151,8 @@ const LocationManagement = () => {
             </table>
             {locations.length === 0 && (
               <div className="text-center py-12">
-                <MapPin className="mx-auto h-12 w-12 text-muted-foreground opacity-20 mb-4" />
-                <p className="text-muted-foreground">No locations found. Add your first location to get started.</p>
+                <MapPin className="mx-auto h-12 w-12 text-gray-200 mb-4" />
+                <p className="text-sm font-medium text-gray-400">No locations found. Add your first location to get started.</p>
               </div>
             )}
           </div>

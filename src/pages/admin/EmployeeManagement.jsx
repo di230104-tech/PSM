@@ -105,56 +105,65 @@ const EmployeeManagement = () => {
 
       {/* Right Column: Employee List */}
       <div className="lg:col-span-2">
-          <div className="bg-card p-8 rounded-xl shadow-lg border border-border">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-foreground">
-            <Users size={24} /> Employee List
-          </h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
+            <Users size={20} className="text-blue-600" />
+            <h2 className="text-lg font-bold text-gray-900">Employee List</h2>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Name</th>
-                  <th scope="col" className="px-6 py-3">Employee ID</th>
-                  <th scope="col" className="px-6 py-3">Department</th>
-                  <th scope="col" className="px-6 py-3">Email</th>
-                  <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Employee ID</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
+                  <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white divide-y divide-gray-100">
                 {loading ? (
-                  <tr><td colSpan="5" className="text-center p-4">Loading...</td></tr>
+                  <tr><td colSpan="5" className="text-center py-10 text-gray-400">Loading...</td></tr>
                 ) : employees.length === 0 ? (
-                  <tr><td colSpan="5" className="text-center p-4">No employees found.</td></tr>
+                  <tr><td colSpan="5" className="text-center py-10 text-gray-400">No employees found.</td></tr>
                 ) : (
                   employees.map(emp => (
-                    <tr key={emp.id} className="border-b border-border">
-                      <td className="px-6 py-4 font-medium text-foreground">{emp.full_name}</td>
-                      <td className="px-6 py-4">{emp.employee_number || 'N/A'}</td>
-                      <td className="px-6 py-4">{emp.departments?.name || 'N/A'}</td>
-                      <td className="px-6 py-4">{emp.email || 'N/A'}</td>
-                      <td className="px-6 py-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary mr-2"
-                          onClick={() => {
-                            setEditingEmployee(emp);
-                            setShowEditEmployeeModal(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
-                          onClick={() => {
-                            setEmployeeToDelete(emp);
-                            setShowDeleteConfirmModal(true);
-                          }}
-                        >
-                          Delete
-                        </Button>
+                    <tr key={emp.id} className="hover:bg-gray-50/80 transition-colors group">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-gray-900">{emp.full_name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{emp.employee_number || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          {emp.departments?.name || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{emp.email || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-600 hover:bg-blue-50"
+                            onClick={() => {
+                              setEditingEmployee(emp);
+                              setShowEditEmployeeModal(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                            onClick={() => {
+                              setEmployeeToDelete(emp);
+                              setShowDeleteConfirmModal(true);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))

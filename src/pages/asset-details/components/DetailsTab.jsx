@@ -331,52 +331,52 @@ const DetailsTab = ({ asset, assignmentHistory = [], maintenanceHistory = [], ta
 
       {/* Assignment History */}
       <div className="mt-12">
-        <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center">
-          <Icon name="History" size={20} className="mr-2 text-primary" />
+        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+          <Icon name="History" size={20} className="mr-2 text-blue-600" />
           Assignment History
         </h3>
         
-        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground uppercase bg-muted/30 border-b border-border">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 font-bold">Assigned To</th>
-                  <th className="px-6 py-4 font-bold">Department</th>
-                  <th className="px-6 py-4 font-bold text-center">Assigned Date</th>
-                  <th className="px-6 py-4 font-bold text-center">Return Date</th>
-                  <th className="px-6 py-4 font-bold text-center">Status</th>
-                  <th className="px-6 py-4 font-bold">Return Notes</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned To</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
+                  <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned Date</th>
+                  <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Return Date</th>
+                  <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Return Notes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {assignmentHistory && assignmentHistory.length > 0 ? (
                   assignmentHistory.map((loan) => (
-                    <tr key={loan.id} className="hover:bg-muted/10 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-foreground">
+                    <tr key={loan.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-gray-900">
                           {loan.employees?.full_name || loan.departments?.name || 'Unassigned'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {loan.employees?.departments?.name || loan.departments?.name || '-'}
                       </td>
-                      <td className="px-6 py-4 text-center text-muted-foreground">
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                         {formatDate(loan.checkout_date)}
                       </td>
-                      <td className="px-6 py-4 text-center text-muted-foreground">
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                         {loan.actual_return_date ? formatDate(loan.actual_return_date) : '-'}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${
                           loan.status === 'active' 
-                            ? 'bg-primary/10 text-primary border-primary/20' 
-                            : 'bg-muted text-muted-foreground border-border'
+                            ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                            : 'bg-gray-100 text-gray-600 border-gray-200'
                         }`}>
                           {loan.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground max-w-xs">
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
                         <p className="truncate italic" title={loan.notes}>
                           {loan.notes || '-'}
                         </p>
@@ -385,10 +385,10 @@ const DetailsTab = ({ asset, assignmentHistory = [], maintenanceHistory = [], ta
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-muted-foreground">
+                    <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
                         <Icon name="Inbox" size={32} className="opacity-20" />
-                        <p>No assignment history found for this asset.</p>
+                        <p className="text-sm font-medium">No assignment history found for this asset.</p>
                       </div>
                     </td>
                   </tr>

@@ -39,49 +39,49 @@ const AssetTable = ({
     };
 
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground uppercase text-xs">
+        <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                     <tr>
-                        <th className="px-6 py-4 font-medium">Asset Tag</th>
-                        <th className="px-6 py-4 font-medium">Product Details</th>
-                        <th className="px-6 py-4 font-medium">
-                            <button onClick={() => onSort('category')} className="flex items-center gap-2">
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Asset Tag</th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product Details</th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <button onClick={() => onSort('category')} className="flex items-center gap-2 hover:text-gray-700 transition-colors">
                                 Category
                                 <Icon name={getSortIcon('category')} size={14} />
                             </button>
                         </th>
-                        <th className="px-6 py-4 font-medium">
-                            <button onClick={() => onSort('departments.name')} className="flex items-center gap-2">
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <button onClick={() => onSort('departments.name')} className="flex items-center gap-2 hover:text-gray-700 transition-colors">
                                 Department
                                 <Icon name={getSortIcon('departments.name')} size={14} />
                             </button>
                         </th>
-                        <th className="px-6 py-4 font-medium">
-                            <button onClick={() => onSort('suppliers.company_name')} className="flex items-center gap-2">
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <button onClick={() => onSort('suppliers.company_name')} className="flex items-center gap-2 hover:text-gray-700 transition-colors">
                                 Supplier
                                 <Icon name={getSortIcon('suppliers.company_name')} size={14} />
                             </button>
                         </th>
-                        <th className="px-6 py-4 font-medium">
-                            <button onClick={() => onSort('status')} className="flex items-center gap-2">
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <button onClick={() => onSort('status')} className="flex items-center gap-2 hover:text-gray-700 transition-colors">
                                 Status
                                 <Icon name={getSortIcon('status')} size={14} />
                             </button>
                         </th>
-                        <th className="px-6 py-4 font-medium text-center">Health</th>
-                        <th className="px-6 py-4 font-medium text-center">EOL Status</th>
-                        <th className="px-6 py-4 font-medium">
-                            <button onClick={() => onSort('locations.name')} className="flex items-center gap-2">
+                        <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Health</th>
+                        <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">EOL Status</th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <button onClick={() => onSort('locations.name')} className="flex items-center gap-2 hover:text-gray-700 transition-colors">
                                 Location
                                 <Icon name={getSortIcon('locations.name')} size={14} />
                             </button>
                         </th>
-                        <th className="px-6 py-4 font-medium text-right">Price</th>
-                        <th className="px-6 py-4 font-medium text-center">Actions</th>
+                        <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Price</th>
+                        <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="bg-white divide-y divide-gray-100">
                     {assets.map((asset) => {
                         const eolDate = calculateEOLDate(asset.purchase_date, asset.lifespan_months || (asset.lifespan_years * 12));
                         const eolStatus = getEOLStatus(eolDate);
@@ -100,56 +100,56 @@ const AssetTable = ({
                         return (
                             <tr 
                                 key={asset.asset_tag} 
-                                className="hover:bg-muted/50 transition-colors cursor-pointer group"
+                                className="hover:bg-gray-50/80 transition-colors cursor-pointer group"
                                 onClick={() => onAssetClick(asset)}
                             >
-                                <td className="px-6 py-4">
-                                    <span className="font-medium text-primary group-hover:underline">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="font-bold text-blue-600 group-hover:text-blue-700">
                                         {asset.asset_tag}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center gap-2">
-                                        <div className="font-medium text-foreground">{asset.product_name}</div>
+                                        <div className="font-bold text-gray-900">{asset.product_name}</div>
                                         {health.status !== 'Healthy' && (
-                                            <div title={health.status} className={health.status.includes('Lemon') ? 'text-error' : 'text-warning'}>
+                                            <div title={health.status} className={health.status.includes('Lemon') ? 'text-red-500' : 'text-amber-500'}>
                                                 <Icon name={health.icon} size={16} />
                                             </div>
                                         )}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">{asset.serial_number}</div>
+                                    <div className="text-[11px] font-medium text-gray-400">{asset.serial_number}</div>
                                 </td>
-                                <td className="px-6 py-4">{asset.category}</td>
-                                <td className="px-6 py-4">{departmentName}</td>
-                                <td className="px-6 py-4 text-muted-foreground">{asset.suppliers?.company_name || 'N/A'}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(asset.status)}`}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{asset.category}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{departmentName}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.suppliers?.company_name || 'N/A'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${getStatusColor(asset.status)}`}>
                                         {formatAssetStatus(asset.status)}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-center">
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
                                     <div className="flex justify-center" title={health.status}>
-                                        <div className={`p-1 flex items-center justify-center rounded-full border ${health.color}`}>
+                                        <div className={`p-1 flex items-center justify-center rounded-lg border ${health.color}`}>
                                             <Icon name={health.icon} size={14} />
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${eolStatus.color}`}>
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${eolStatus.color}`}>
                                         {eolStatus.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">{asset.locations?.name || 'Unassigned'}</td>
-                                <td className="px-6 py-4 text-right font-medium">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{asset.locations?.name || 'Unassigned'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-gray-900">
                                     {asset.purchase_price ? `RM ${asset.purchase_price.toLocaleString()}` : '-'}
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex items-center justify-center gap-1">
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
                                             onClick={(e) => { e.stopPropagation(); onAssetClick(asset); }} 
-                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                            className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
                                         >
                                             <Icon name="Eye" size={16} />
                                         </Button>
@@ -157,7 +157,7 @@ const AssetTable = ({
                                             variant="ghost" 
                                             size="icon" 
                                             onClick={(e) => { e.stopPropagation(); onOpenQrModal(asset); }} 
-                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                            className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
                                         >
                                             <Icon name="QrCode" size={16} />
                                         </Button>
@@ -165,7 +165,7 @@ const AssetTable = ({
                                             variant="ghost" 
                                             size="icon" 
                                             onClick={(e) => { e.stopPropagation(); onDeleteAsset(asset); }} 
-                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                            className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
                                         >
                                             <Icon name="Trash" size={16} />
                                         </Button>

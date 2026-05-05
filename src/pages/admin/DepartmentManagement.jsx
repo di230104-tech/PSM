@@ -59,30 +59,34 @@ const DepartmentManagement = () => {
         </Button>
       </div>
 
-      <div className="bg-card p-6 rounded-lg border">
-        <h2 className="text-lg font-semibold mb-4">Existing Departments</h2>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">Existing Departments</h2>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground uppercase bg-background border-b">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3">ID</th>
-                <th scope="col" className="px-6 py-3">Name</th>
-                <th scope="col" className="px-6 py-3">Created At</th>
-                <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created At</th>
+                <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white divide-y divide-gray-100">
               {departments.map((dept) => (
-                <tr key={dept.id} className="border-b hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4 font-mono text-xs">{dept.id}</td>
-                  <td className="px-6 py-4 font-medium text-foreground">{dept.name}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{new Date(dept.created_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
+                <tr key={dept.id} className="hover:bg-gray-50/80 transition-colors group">
+                  <td className="px-6 py-4 whitespace-nowrap font-mono text-[11px] text-gray-400">{dept.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-gray-900">{dept.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(dept.created_at).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-primary"
+                        className="h-8 w-8 text-blue-600 hover:bg-blue-50"
                         onClick={() => {
                           setEditingDepartment(dept);
                           setShowEditDepartmentModal(true);
@@ -94,7 +98,7 @@ const DepartmentManagement = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive"
+                        className="h-8 w-8 text-red-600 hover:bg-red-50"
                         onClick={() => {
                           setDepartmentToDelete(dept);
                           setShowDeleteConfirmModal(true);
@@ -110,7 +114,9 @@ const DepartmentManagement = () => {
             </tbody>
           </table>
           {departments.length === 0 && (
-            <p className="text-center text-muted-foreground mt-8 py-8">No departments found.</p>
+            <div className="text-center text-gray-400 py-12">
+              <p className="text-sm font-medium">No departments found.</p>
+            </div>
           )}
         </div>
       </div>
